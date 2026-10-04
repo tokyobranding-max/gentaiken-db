@@ -84,6 +84,7 @@ ul{list-style:none}
 .hint{font-size:12px;color:var(--muted);line-height:1.6}
 .lab{font-size:11.5px;color:var(--muted);letter-spacing:.03em}
 
+.no-if [data-act="add-if"]{display:none}
 .mbtns{display:flex;flex-direction:column;gap:8px}
 .mbtns .btn{padding:10px 16px;font-size:13.5px;font-weight:700;gap:12px}
 .clist{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
@@ -460,6 +461,11 @@ seedFutures();
 let futSug=[], futMsg='';
 let sel=null, mode=null, compareId=null, tagHl=null, drag=null, suppressUntil=0, clearAsk=false;
 let view='map', q='';
+/* 「もしも」機能を一時的に隠している。true に戻すと、ボタン・カード・線・比較がすべて再び表示される（データは消していない） */
+const SHOW_IF=false;
+const hid=c=>!SHOW_IF&&!!c&&c.kind==='if';
+const VC=()=>S.cards.filter(c=>!hid(c));
+const VL=()=>S.lines.filter(l=>!hid(card(l.from.card))&&!hid(card(l.to.card)));
 let Z=1, CW=0, CH=0; /* 地図の倍率と、中身の大きさ */
 let sampleFn=null, downloads=null;
 
@@ -506,7 +512,7 @@ function futureCandidate(c){
   return {text,sig,r,len:lengthOf(r),unmet:r.unmet.map(id=>card(id).value)};
 }
 function chainLines(id){
-  const ok=S.lines.filter(l=>l.state==='confirmed');
+  const ok=VL().filter(l=>l.state==='confirmed');
   const walk=(dir)=>{const set=new Set([id]);let grow=true;while(grow){grow=false;for(const l of ok){const a=dir?l.from.card:l.to.card,b=dir?l.to.card:l.from.card;if(set.has(a)&&!set.has(b)){set.add(b);grow=true;}}}return set;};
   const down=walk(true), up=walk(false);
   return new Set(ok.filter(l=>(up.has(l.from.card)&&up.has(l.to.card))||(down.has(l.from.card)&&down.has(l.to.card))).map(l=>l.id));
@@ -575,7 +581,7 @@ function rowHtml(c,row,body){
 }
 function renderCards(){
   let h='';
-  for(const c of S.cards){
+  for(const c of VC()){
     const r=(c.kind==='now'||c.kind==='if')?rootOf(c.id):null;
     const rootless=!!r&&r.total>0&&r.root===0;
     const ph={past:'起きたこと',now:'いまやっていること',if:'もしも、こうしたら',future:'実現したい姿'}[c.kind];
@@ -587,7 +593,7 @@ function renderCards(){
       rowHtml(c,'val',c.value.trim()?esc(c.value):'<span class="ph">'+(c.kind==='past'?'まだ言葉になっていない':'価値観')+'</span>')+
       (rootless?'<p class="warn">価値観からの線が届いていません</p>':'')+'</article>';
   }
-  for(const c of S.cards){
+  for(const c of VC()){
     const f=futureCandidate(c); if(!f)continue;
     h+='<article class="cand" data-for="'+c.id+'" style="opacity:'+(0.55+Math.min(1,f.r.root/12)*0.45).toFixed(2)+'">'+
       '<p class="cand-k">未来の候補</p><p class="cand-t">'+esc(f.text)+'</p>'+
@@ -608,7 +614,7 @@ function autoLayout(){
   const past=S.cards.filter(c=>c.kind==='past').sort((a,b)=>(a.age??0)-(b.age??0));
   past.forEach((c,i)=>{c.x=32+i*STEP;c.y=TOP;});
   const colX=32+past.length*STEP; let y=TOP;
-  for(const c of [...S.cards.filter(c=>c.kind==='now'),...S.cards.filter(c=>c.kind==='if')]){c.x=colX;c.y=y;y+=hOf(c.id)+112;}
+  for(const c of [...S.cards.filter(c=>c.kind==='now'),...VC().filter(c=>c.kind==='if')]){c.x=colX;c.y=y;y+=hOf(c.id)+112;}
   for(const f of S.cards.filter(c=>c.kind==='future')){
     const l=S.lines.find(l=>l.state==='confirmed'&&l.to.card===f.id&&['now','if'].includes(card(l.from.card)?.kind));
     const src=l&&card(l.from.card);
@@ -673,7 +679,7 @@ function renderWires(){
   const ver=compareId&&S.versions.find(v=>v.id===compareId);
   const diff=ver?diffLines(ver.lines,S.lines):null;
   const rank={removed:0,candidate:1,confirmed:2};
-  const list=[...S.lines].sort((a,b)=>rank[a.state]-rank[b.state]);
+  const list=[...VL()].sort((a,b)=>rank[a.state]-rank[b.state]);
   const lane={n:0}; let h='';
   for(const l of list){
     const g=pathFor(l,rects,lane); if(!g)continue;
@@ -725,7 +731,7 @@ function linePanel(l){
     '<button class="btn sm" type="button" data-act="re-from">始点をつなぎ直す</button><button class="btn sm" type="button" data-act="re-to">終点をつなぎ直す</button></div>'+effectHtml(l);
 }
 function renderSide(){
-  const targets=[...S.cards.filter(c=>c.kind==='now'),...S.cards.filter(c=>c.kind==='if')];
+  const targets=[...S.cards.filter(c=>c.kind==='now'),...VC().filter(c=>c.kind==='if')];
   const rs=targets.map(c=>({c,r:rootOf(c.id)})), max=Math.max(12,...rs.map(x=>x.r.root));
   let h='<section class="sec"><div class="sec-h"><h2>もしもの比較</h2><button class="btn sm line" type="button" data-act="add-if">'+ic('plus',14)+'もしもを足す</button></div>';
   if(!rs.length)h+='<p class="hint">「いま」や「もしも」のカードを足すと、どれが自分の原体験に根ざしているかを比べられます。</p>';
@@ -743,6 +749,7 @@ function renderSide(){
   if(rs.length)h+='<p class="hint">丸は、届いている価値観の数です。目安は、あなたが引いた線をもとにした仮説で、判定や予測ではありません。届いている価値観が半分以上なら「長い」とする、仮の基準です。</p><p class="hint" id="aiMsg" role="status"></p>';
   h+='</section>';
 
+  if(!SHOW_IF)h='';
   h+='<section class="sec"><div class="sec-h"><h2>'+(sel&&sel.type==='row'?'選んだ行':'選んだ線')+'</h2></div>';
   const sl=sel&&sel.type==='line'?line(sel.id):null;
   if(sl)h+=linePanel(sl);
@@ -766,7 +773,7 @@ function renderSide(){
 function renderMenu(){
   let h='';
   for(const [k,name] of [['past','過去'],['now','いま'],['if','もしも'],['future','未来']]){
-    let cs=S.cards.filter(c=>c.kind===k&&matchQ(c)!==false); if(!cs.length)continue;
+    let cs=VC().filter(c=>c.kind===k&&matchQ(c)!==false); if(!cs.length)continue;
     if(k==='past')cs=cs.slice().sort((a,b)=>(a.age??0)-(b.age??0));
     h+='<p class="lab">'+name+'</p><ul class="clist">'+cs.map(c=>'<li><button type="button" class="citem'+(sel&&sel.type==='row'&&sel.card===c.id?' on':'')+'" data-act="sel-card" data-id="'+c.id+'" title="'+esc(c.exp)+'"><span class="cdot k-'+k+'"></span>'+(k==='past'?'<span class="ck">'+esc((c.age??'？')+'歳')+'</span>':k==='now'?'<span class="ck">いま</span>':'')+'<span class="ct">'+esc((c.exp||'').trim()||'（未記入）')+'</span></button></li>').join('')+'</ul>';
   }
@@ -840,7 +847,7 @@ function barRows(rows,color){
 function renderView(){
   const el=$('#viewOther'); let h='';
   if(view==='list'){
-    const cs=sortedCards().filter(c=>matchQ(c)!==false);
+    const cs=sortedCards().filter(c=>!hid(c)&&matchQ(c)!==false);
     h='<div class="sec-h"><h2>リスト</h2><span class="hint">'+cs.length+' 枚'+(q.trim()?'（「'+esc(q.trim())+'」に合うもの）':'')+'</span></div>';
     h+=cs.length?'<div class="tablewrap"><table class="list"><thead><tr><th>区分</th><th>体験</th><th>感情</th><th>価値観</th><th>確定した線</th><th></th></tr></thead><tbody>'+cs.map(c=>{
         const n=S.lines.filter(l=>l.state==='confirmed'&&(l.from.card===c.id||l.to.card===c.id)).length;
@@ -848,15 +855,15 @@ function renderView(){
       }).join('')+'</tbody></table></div>'
       :'<p class="empty">'+(S.cards.length?'合うカードがありません。':'まだカードがありません。左の「カードを追加」から入れてください。')+'</p>';
   }else if(view==='stats'){
-    const past=S.cards.filter(c=>c.kind==='past'), n=st=>S.lines.filter(l=>l.state===st).length;
+    const past=S.cards.filter(c=>c.kind==='past'), n=st=>VL().filter(l=>l.state===st).length;
     const vals=past.filter(c=>c.value.trim());
-    const tiles=[[S.cards.length,'カード'],[past.length,'過去の原体験'],[S.cards.filter(c=>c.kind==='now'||c.kind==='if').length,'いま・もしも'],[n('confirmed'),'確定した線'],[n('candidate'),'候補の線'],[vals.length+' / '+past.length,'言葉になった価値観']];
-    const em=new Map(); S.cards.forEach(c=>c.emoTags.forEach(t=>em.set(t,(em.get(t)||0)+1)));
+    const tiles=[[VC().length,'カード'],[past.length,'過去の原体験'],[VC().filter(c=>c.kind==='now'||c.kind==='if').length,SHOW_IF?'いま・もしも':'いま'],[n('confirmed'),'確定した線'],[n('candidate'),'候補の線'],[vals.length+' / '+past.length,'言葉になった価値観']];
+    const em=new Map(); VC().forEach(c=>c.emoTags.forEach(t=>em.set(t,(em.get(t)||0)+1)));
     const emRows=[...em.entries()].sort((a,b)=>b[1]-a[1]);
-    const valRows=vals.map(c=>[c.value,new Set(S.lines.filter(l=>l.state==='confirmed'&&l.from.card===c.id&&l.from.row==='val'&&card(l.to.card)&&card(l.to.card).kind!=='past').map(l=>l.to.card)).size]).sort((a,b)=>b[1]-a[1]);
+    const valRows=vals.map(c=>[c.value,new Set(VL().filter(l=>l.state==='confirmed'&&l.from.card===c.id&&l.from.row==='val'&&card(l.to.card)&&card(l.to.card).kind!=='past').map(l=>l.to.card)).size]).sort((a,b)=>b[1]-a[1]);
     h='<div class="sec-h"><h2>統計</h2></div><div class="tiles">'+tiles.map(t=>'<div class="tile"><b>'+t[0]+'</b><span>'+t[1]+'</span></div>').join('')+'</div>'+
       '<div class="statbox"><h3>感情タグの回数</h3>'+(emRows.length?barRows(emRows,'var(--emo)')+'<p class="hint">すべてのカードに付いた感情タグを数えたものです。</p>':'<p class="empty">感情タグを付けると、ここに回数が出ます。</p>')+'</div>'+
-      '<div class="statbox"><h3>価値観が届いている先の数</h3>'+(valRows.length?barRows(valRows,'var(--val)')+'<p class="hint">それぞれの価値観から、「いま」「もしも」「未来」のカードへ確定した線が何枚ぶん届いているかです。</p>':'<p class="empty">過去のカードに価値観を書くと、ここに出ます。</p>')+'</div>';
+      '<div class="statbox"><h3>価値観が届いている先の数</h3>'+(valRows.length?barRows(valRows,'var(--val)')+'<p class="hint">それぞれの価値観から、'+(SHOW_IF?'「いま」「もしも」「未来」':'「いま」「未来」')+'のカードへ確定した線が何枚ぶん届いているかです。</p>':'<p class="empty">過去のカードに価値観を書くと、ここに出ます。</p>')+'</div>';
   }else{
     h='<div class="sec-h"><h2>設定</h2></div>'+
       '<div class="set"><h3>データ</h3><p class="hint">'+(S.sample?'いまはサンプル（架空の38歳の例）が入っています。':'カード '+S.cards.length+' 枚、線 '+S.lines.length+' 本、版 '+S.versions.length+' 個が入っています。')+'入力した内容は、この端末のブラウザの中だけに保存されます。</p>'+
@@ -1200,6 +1207,11 @@ mapEl.addEventListener('wheel',e=>{
 splitter($('#splitL'),'lw',1,'x'); splitter($('#splitR'),'rw',-1,'x'); splitter($('#splitM'),'mh',1,'y');
 
 /* ---------- 起動 ---------- */
+if(!SHOW_IF){
+  document.body.classList.add('no-if');
+  const o=document.querySelector('#f-kind option[value="if"]'); if(o)o.remove();
+  const j=document.querySelector('[data-jump="now"]'); if(j)j.textContent='いまへ';
+}
 document.querySelectorAll('[data-ic]').forEach(el=>el.insertAdjacentHTML('afterbegin',ic(el.dataset.ic,el.classList.contains('sm')?14:el.classList.contains('fab')?22:18)));
 if(['#list','#stats','#settings'].includes(location.hash))view=location.hash.slice(1);
 render();
