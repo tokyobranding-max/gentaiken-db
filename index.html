@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>原体験DB(仮)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* 配置: 上に操作バー。左に地図（年齢順に左から右へ流れるカードと線）、その下に原点の線。右に「もしも」の比較と線の編集。
+   見た目は暗い地に生成りの点と線の一種類だけ（参考図に合わせた意図的な選択）。 */
+:root{
+  color-scheme:dark;
+  --bg:#0d0e12; --surface:#15171e; --raised:#1d2029; --rule:#2b2f3b;
+  --fg:#ece8dc; --muted:#a0a1ad; --faint:#6e707d;
+  --wire:#8f919e; --accent:#b3a4ff;
+  --age:#43c871; --exp:#5e9cf2; --emo:#ee6b6b; --val:#f2a23f;
+  --add:#7be0a4; --del:#ff8f8f; --chg:#ffd27a;
+  --display:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,p,dl,dd,ul{margin:0;padding:0}
+ul{list-style:none}
+
+.app{max-width:1720px;margin-inline:auto;padding-inline:clamp(16px,2.4vw,28px);padding-block:16px 44px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 18px}
+.bar h1{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.06em}
+.tagline{font-size:13px;color:var(--muted);min-width:0;flex:1 1 280px}
+.btn{border:1px solid var(--rule);background:var(--raised);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;line-height:1.4}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:700}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn.danger{color:var(--del);border-color:var(--rule);background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.notice{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted);border-left:2px solid var(--accent);padding:2px 0 2px 10px}
+.notice b{color:var(--fg);font-weight:700}
+.modebar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px;background:var(--raised);border:1px solid var(--accent);border-radius:6px;padding:6px 12px}
+.modebar .k{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.modebar .k i{display:inline-block;width:18px;height:3px;border-radius:2px}
+
+.work{display:grid;grid-template-columns:var(--lw,224px) 14px minmax(0,1fr) 14px var(--rw,344px);align-items:start}
+.center{display:flex;flex-direction:column;min-width:0}
+.center .legend{margin-bottom:10px}
+.split{position:relative;touch-action:none;user-select:none;display:flex;justify-content:center}
+.split.x{align-self:stretch;cursor:col-resize}
+.split.y{height:16px;cursor:row-resize;align-items:center}
+.grip{display:block;border-radius:2px;background:var(--rule)}
+.split.x .grip{position:sticky;top:42vh;width:4px;height:44px}
+.split.y .grip{width:56px;height:4px}
+.split:hover .grip,.split.on .grip,.split:focus-visible .grip{background:var(--accent)}
+.mbtns{display:flex;flex-direction:column;gap:6px}
+.mbtns .btn{text-align:left}
+.clist{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.citem{display:flex;gap:8px;align-items:baseline;width:100%;border:0;background:transparent;text-align:left;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;min-width:0}
+.citem:hover{background:var(--raised)}
+.citem.on{background:rgba(236,232,220,.1)}
+.citem .ck{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--age);font-variant-numeric:tabular-nums}
+.citem .ct{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i.t{width:4px;height:12px;border-radius:2px;display:inline-block}
+.legend svg{display:block}
+.legend .jump{margin-left:auto;gap:6px}
+.map{height:var(--mh,clamp(440px,68vh,740px));overflow:auto;border:1px solid var(--rule);border-radius:10px;background:var(--bg);position:relative}
+.mapbox{position:relative}
+.sizer{position:relative;overflow:hidden}
+.inner{position:absolute;left:0;top:0;transform-origin:0 0;cursor:grab;background-image:radial-gradient(var(--rule) 1px,transparent 1px);background-size:24px 24px}
+.inner.panning{cursor:grabbing}
+.zoomctl{position:absolute;left:12px;bottom:20px;z-index:5;display:flex;align-items:center;gap:2px;padding:3px;background:var(--raised);border:1px solid var(--rule);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.zoomctl button{height:32px;min-width:32px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;cursor:pointer;font-size:17px;line-height:1}
+.zoomctl button:hover{background:var(--rule)}
+.zoomctl #zPct{min-width:56px;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+#wires{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.mapempty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
+
+.card{position:absolute;z-index:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;width:204px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;font-size:12.5px;line-height:1.5}
+.card.k-now{border-color:var(--fg)}
+.card.k-if{border:1px dashed var(--accent)}
+.card.k-future{border-color:var(--accent)}
+.card.glow{box-shadow:0 0 0 2px var(--emo)}
+.card.dragging{z-index:4;cursor:grabbing;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.card.dragging .row{cursor:grabbing}
+.row{position:relative;padding:7px 12px 7px 20px;border-top:1px solid var(--rule);cursor:grab;min-height:32px}
+.row:first-child{border-top:0}
+.row::before{content:"";position:absolute;left:8px;top:7px;bottom:7px;width:4px;border-radius:2px;background:var(--faint)}
+.r-age::before{background:var(--age)} .r-exp::before{background:var(--exp)} .r-emo::before{background:var(--emo)} .r-val::before{background:var(--val)}
+.row.on{background:rgba(236,232,220,.09)}
+.row.src{background:rgba(179,164,255,.16)}
+.r-age{display:block;cursor:grab;touch-action:none}
+.r-age .cell{display:flex;align-items:center;gap:8px}
+.age{font-family:var(--mono);font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
+.edit{margin-left:auto;border:0;background:transparent;color:var(--muted);font-size:11.5px;cursor:pointer;padding:2px 4px;border-radius:4px}
+.edit:hover{color:var(--fg)}
+.chip{display:inline-block;font-size:11px;line-height:1.5;padding:0 7px;border-radius:999px;border:1px solid var(--rule);color:var(--muted)}
+.chip.origin{border-color:var(--fg);color:var(--fg)}
+.chip.st-confirmed{border-color:var(--fg);color:var(--fg)}
+.chip.st-candidate{border-style:dashed}
+.ph{color:var(--faint)}
+.tag{display:inline-block;margin-right:6px;color:var(--muted);font-size:11.5px}
+.tag.emo{color:var(--fg);cursor:pointer;border:0;background:transparent;padding:0;font-size:12.5px}
+.tag.emo:hover{text-decoration:underline}
+.tags{display:block;margin-top:2px}
+.str{display:inline-flex;gap:3px;vertical-align:middle;margin-left:2px}
+.str i{width:5px;height:5px;border-radius:50%;background:var(--rule)}
+.str i.f{background:var(--emo)}
+.warn{font-size:11px;color:var(--chg);padding:5px 12px 6px 20px;border-top:1px solid var(--rule)}
+.port{position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:var(--bg);border:1.5px solid var(--wire);cursor:crosshair;touch-action:none;z-index:2}
+.port::after{content:"";position:absolute;inset:-9px}
+.port.l{left:-6px} .port.r{right:-6px}
+.port:hover,.row.src .port{background:var(--fg);border-color:var(--fg)}
+.cand{position:absolute;z-index:1;width:220px;border:1.5px dashed var(--accent);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:5px;background:rgba(13,14,18,.82)}
+.cand-k{font-size:11px;letter-spacing:.08em;color:var(--accent)}
+.cand-t{font-weight:500}
+.cand-u,.cand-m{font-size:11.5px;color:var(--muted)}
+.cand .btn{align-self:flex-start;margin-top:3px}
+
+.wire .vis{fill:none;stroke:var(--wire);stroke-linecap:round}
+.wire .hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer}
+.wire .halo{fill:none;stroke:var(--accent);opacity:.42;stroke-linecap:round}
+.wire .end{fill:var(--wire)}
+.wire.s-candidate .vis{stroke-dasharray:3 6;opacity:.8}
+.wire.s-removed .vis{stroke-dasharray:1 7;opacity:.34}
+.wire.dim .vis,.wire.dim .end{opacity:.2}
+.wire.hl .vis,.wire.sel .vis{stroke:var(--fg);opacity:1}
+.wire.hl .end,.wire.sel .end{fill:var(--fg)}
+.wire.d-add .vis{stroke:var(--add);opacity:1} .wire.d-del .vis{stroke:var(--del);opacity:1} .wire.d-chg .vis{stroke:var(--chg);opacity:1}
+.wire.fut .vis{stroke:var(--accent);stroke-dasharray:2 6}
+.wire.tmp .vis{stroke:var(--accent);stroke-dasharray:4 5}
+
+.panel{border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+.side,.menu{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto;min-width:0}
+.sec{padding:14px 16px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:10px}
+.sec:first-child{border-top:0}
+.sec-h{display:flex;align-items:center;gap:8px}
+.sec h2,.osec h2{font-size:13px;font-weight:700;letter-spacing:.06em;margin-right:auto}
+.hint{font-size:12px;color:var(--muted);line-height:1.6}
+.cmp{display:flex;flex-direction:column;gap:5px;padding:9px 0;border-top:1px solid var(--rule)}
+.cmp:first-of-type{border-top:0;padding-top:0}
+.cmp-h{display:flex;align-items:baseline;gap:8px}
+.cmp-h .k{font-size:11px;color:var(--accent);flex:none}
+.cmp-h .k.now{color:var(--muted)}
+.cmp-h button{border:0;background:transparent;padding:0;text-align:left;font-weight:500;cursor:pointer;min-width:0;flex:1}
+.cmp-h button:hover{text-decoration:underline}
+.len{flex:none;font-size:11.5px;border:1px solid var(--rule);border-radius:999px;padding:0 8px}
+.len.long{border-color:var(--fg)}
+.len.none{border-style:dashed;color:var(--chg)}
+.meter{height:6px;background:var(--raised);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--val);border-radius:3px}
+.cmp-n{display:flex;gap:14px;font-size:12px;color:var(--muted)}
+.cmp-n b{font-family:var(--mono);font-weight:500;color:var(--fg);font-variant-numeric:tabular-nums}
+.unmet{font-size:12px;color:var(--muted)}
+.lp-t{font-weight:500}
+.arrow{color:var(--muted)}
+.meta{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lab{font-size:11.5px;color:var(--muted);letter-spacing:.03em}
+textarea,input[type=text],input[type=number],select{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;width:100%;font-size:13px}
+textarea{resize:vertical;line-height:1.55}
+.seg{display:flex;gap:4px}
+.segb{flex:1;border:1px solid var(--rule);background:var(--bg);border-radius:6px;padding:4px 0;cursor:pointer;font-family:var(--mono);font-size:13px}
+.segb.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.effect{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:9px;display:flex;flex-direction:column;gap:3px}
+.effect b{color:var(--fg);font-weight:500}
+.poss li{font-size:12.5px;padding:5px 0;border-top:1px solid var(--rule)}
+.poss li:first-child{border-top:0;padding-top:0}
+.poss small{display:block;color:var(--muted);font-size:11.5px}
+.ver{display:flex;flex-wrap:wrap;gap:6px}
+.ver input{flex:1 1 120px;min-width:0}
+.vers li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12.5px;padding:6px 0;border-top:1px solid var(--rule)}
+.vers li span{margin-right:auto;min-width:0}
+.vers small{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:6px}
+
+.osec{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.obody{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start}
+.ochart{flex:3 1 420px;min-width:0;overflow-x:auto}
+.ochart svg{display:block;width:100%;min-width:460px;max-width:720px;height:auto}
+.omat{flex:2 1 240px;min-width:0;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.omat dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+.omat dt{color:var(--muted);font-size:12px}
+.flist{display:flex;flex-direction:column}
+.flist li{display:flex;gap:9px;align-items:baseline;padding:5px 0;border-top:1px solid var(--rule)}
+.flist li:first-child{border-top:0}
+.flist li::before{content:"";flex:none;align-self:center;width:7px;height:7px;border-radius:50%;border:1.5px dashed var(--accent)}
+.flist li span{flex:1;min-width:0;font-weight:500}
+.fx{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0 6px;font-size:15px;line-height:1;border-radius:4px}
+.fx:hover{color:var(--fg)}
+.odot{cursor:pointer}
+.empty{color:var(--muted);font-size:13px}
+
+dialog{background:var(--surface);color:var(--fg);border:1px solid var(--rule);border-radius:10px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgba(5,6,9,.72)}
+.dlg{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.dlg h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.04em}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pick{border:1px solid var(--rule);background:var(--bg);border-radius:999px;padding:2px 11px;font-size:12.5px;cursor:pointer}
+.pick.on{background:var(--emo);border-color:var(--emo);color:var(--bg);font-weight:700}
+.pick.ai{border-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:center;font-size:13px}
+.links{display:flex;flex-direction:column;gap:6px}
+.links label{display:flex;gap:10px;align-items:center;font-size:12.5px}
+.links label span{flex:1;min-width:0}
+.links select{width:auto;flex:none}
+.dlg-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dlg-acts .sp{flex:1}
+hr{border:0;border-top:1px solid var(--rule);margin:2px 0;width:100%}
+
+@media (max-width:1020px){.work{display:flex;flex-direction:column;gap:14px;align-items:stretch}.split.x{display:none}.side,.menu{position:static;max-height:none}.map{height:var(--mh,440px)}.mbtns{flex-direction:row;flex-wrap:wrap}}
+@media (prefers-reduced-motion:no-preference){.btn,.segb,.pick{transition:border-color .12s,background .12s}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1>原体験DB(仮)</h1>
+    <p class="tagline">自分の体験や感情、価値観をアーカイブして、迷った時、感じた時に立ち戻る場所</p>
+  </header>
+  <div class="notice" id="notice"></div>
+  <div class="modebar" id="modeBar" role="status" hidden></div>
+
+  <div class="work">
+    <nav class="panel menu" id="menu" aria-label="メニュー">
+      <section class="sec"><h2>メニュー</h2>
+        <div class="mbtns">
+          <button class="btn primary" id="addBtn" type="button">＋ カードを追加</button>
+          <button class="btn" type="button" data-act="add-if">＋ もしもを足す</button>
+          <button class="btn" id="layoutBtn" type="button">年齢順に並べ直す</button>
+          <button class="btn" id="ioBtn" type="button">書き出す・読み込む</button>
+        </div>
+      </section>
+      <section class="sec"><h2>カード</h2><div id="cardList"></div></section>
+      <section class="sec"><h2>版</h2><div id="verBox"></div></section>
+    </nav>
+    <div class="split x" id="splitL" role="separator" aria-orientation="vertical" aria-label="メニューの幅を変える" tabindex="0"><span class="grip"></span></div>
+    <div class="center">
+      <div class="legend" aria-label="凡例">
+        <span><i class="t" style="background:var(--age)"></i>年齢</span>
+        <span><i class="t" style="background:var(--exp)"></i>体験</span>
+        <span><i class="t" style="background:var(--emo)"></i>感情</span>
+        <span><i class="t" style="background:var(--val)"></i>価値観</span>
+        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#8f919e" stroke-width="3" stroke-linecap="round" fill="none"/></svg>確定（太いほど強い）</span>
+        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#8f919e" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round" fill="none"/></svg>候補</span>
+        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#b3a4ff" stroke-width="1.5" stroke-dasharray="2 5" stroke-linecap="round" fill="none"/></svg>未来</span>
+        <span>行の端の丸を引っぱるか、丸を押してから相手の行を押すと、線がつながります。何もないところを引っぱると地図が動き、Ctrl（⌘）＋ホイールで拡大・縮小します</span>
+        <span class="jump"><button class="btn sm" type="button" data-jump="past">過去へ</button><button class="btn sm" type="button" data-jump="now">いま・もしもへ →</button></span>
+      </div>
+      <div class="mapbox">
+        <div class="map" id="map">
+          <div class="sizer" id="sizer">
+            <div class="inner" id="inner">
+              <svg id="wires" aria-hidden="true"></svg>
+              <div id="cards"></div>
+            </div>
+          </div>
+        </div>
+        <div class="zoomctl" role="group" aria-label="地図の拡大と縮小">
+          <button type="button" id="zFit" aria-label="全体を表示" title="全体を表示"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M2 14h16M6 2v16M14 2v16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <button type="button" id="zOut" aria-label="縮小" title="縮小">−</button>
+          <button type="button" id="zPct" aria-label="100%に戻す" title="100%に戻す">100%</button>
+          <button type="button" id="zIn" aria-label="拡大" title="拡大">＋</button>
+        </div>
+      </div>
+      <div class="split y" id="splitM" role="separator" aria-orientation="horizontal" aria-label="地図の高さを変える" tabindex="0"><span class="grip"></span></div>
+      <section class="panel osec" aria-labelledby="originT">
+        <h2 id="originT">未来の線：原点から延ばす</h2>
+        <div class="obody" id="originBody"></div>
+      </section>
+    </div>
+    <div class="split x" id="splitR" role="separator" aria-orientation="vertical" aria-label="比較の欄の幅を変える" tabindex="0"><span class="grip"></span></div>
+    <aside class="panel side" id="side" aria-label="比較と編集"></aside>
+  </div>
+</div>
+
+<dialog id="cardDlg" aria-labelledby="cardDlgT">
+  <form class="dlg" id="cardForm">
+    <h2 id="cardDlgT">カードを追加</h2>
+    <div class="grid2">
+      <div class="field"><label class="lab" for="f-kind">区分</label>
+        <select id="f-kind"><option value="past">過去（原体験）</option><option value="now">いま</option><option value="if">もしも</option><option value="future">未来</option></select></div>
+      <div class="field" id="f-age-wrap"><label class="lab" for="f-age" id="f-age-lab">年齢</label><input id="f-age" type="number" min="0" max="120" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label class="lab" for="f-exp" id="f-exp-lab">体験（起きたことだけ）</label><textarea id="f-exp" rows="3"></textarea></div>
+    <div class="field"><label class="lab" for="f-fact">事実タグ（空白で区切る）</label><input id="f-fact" type="text" placeholder="学校 家族"></div>
+    <div class="field"><span class="lab" id="f-emo-lab">感情タグ（そのとき生まれた感情）</span>
+      <div class="chips" id="f-emos" role="group" aria-labelledby="f-emo-lab"></div>
+      <input id="f-emo-free" type="text" placeholder="ほかの感情（空白で区切る）" aria-label="ほかの感情"></div>
+    <div class="field"><span class="lab" id="f-str-lab">感情の強さ</span><div class="seg" id="f-str" role="group" aria-labelledby="f-str-lab"></div></div>
+    <div class="field"><label class="lab" for="f-val">価値観（あとから書いてもよい）</label><input id="f-val" type="text">
+      <div id="aiBox" hidden><div class="acts"><button type="button" class="btn sm" id="aiBtn">AIに候補を3つ出してもらう</button><span class="hint">押すと、上の体験と感情がClaudeに送られます。</span></div><div class="chips" id="aiOut" role="status"></div></div></div>
+    <label class="check" id="f-origin-wrap"><input type="checkbox" id="f-origin"> このカードを原点にする</label>
+    <div class="field" id="f-links-wrap"><span class="lab">どの価値観とつながるか（強さを選ぶと線が引かれます）</span><div class="links" id="f-links"></div></div>
+    <div class="dlg-acts"><button type="button" class="btn danger" id="f-del">削除</button><span class="sp"></span><button type="button" class="btn" id="f-cancel">やめる</button><button type="submit" class="btn primary">保存する</button></div>
+  </form>
+</dialog>
+
+<dialog id="ioDlg" aria-labelledby="ioT">
+  <div class="dlg">
+    <h2 id="ioT">書き出す・読み込む</h2>
+    <p class="hint">カード、線、版のすべてが入ります。内容はこの端末のブラウザの中だけにあります。</p>
+    <div class="field"><label class="lab" for="ioText">書き出した内容</label><textarea id="ioText" rows="6" readonly></textarea></div>
+    <div class="acts"><button class="btn" id="ioCopy" type="button">コピーする</button><button class="btn" id="ioSave" type="button" hidden>ファイルに保存する</button><span class="hint" id="ioMsg" role="status"></span></div>
+    <hr>
+    <div class="field"><label class="lab" for="ioFile">ファイルから読み込む</label><input type="file" id="ioFile" accept=".json,application/json"></div>
+    <div class="field"><label class="lab" for="ioPaste">または、書き出した内容を貼り付ける</label><textarea id="ioPaste" rows="3"></textarea></div>
+    <div class="acts"><button class="btn primary" id="ioLoad" type="button">読み込む（いまの内容と入れ替える）</button><button class="btn" id="ioClose" type="button">閉じる</button></div>
+  </div>
+</dialog>
+
+<script>
+const KEY='gentaiken-db-v1', W=204, STEP=252, GAP=72, TOP=56;
+const ROWNAME={age:'年齢',exp:'体験',emo:'感情',val:'価値観'};
+const KINDNAME={past:'過去',now:'いま',if:'もしも',future:'未来'};
+const EMOS=['うれしい','夢中','誇らしい','安心','さびしい','くやしい','こわい','むなしい','怒り','恥ずかしい'];
+const SW=[0,1,1.6,2.4,3.3,4.4];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+/* ---------- データ ---------- */
+function sampleState(){
+  const c=(id,kind,age,exp,fact,emo,str,value,origin)=>({id,kind,age,exp,factTags:fact,emoTags:emo,emoStrength:str,value,x:0,y:0,origin:!!origin});
+  const cards=[
+    c('p6','past',6,'祖父の工房で、木の椅子をいっしょに作った',['家族','ものづくり'],['うれしい','夢中'],5,'手を動かして形にする',true),
+    c('p9','past',9,'転校して、最初の1ヶ月は誰とも話せなかった',['学校','転校'],['さびしい','くやしい'],4,'自分から声をかける人でいたい'),
+    c('p15','past',15,'文化祭でクラスの展示をまとめ、全員の作品を並べた',['学校','文化祭'],['うれしい','夢中'],4,'一人ひとりの持ち味を生かす'),
+    c('p24','past',24,'入社して営業に配属され、数字だけで評価された',['仕事'],['くやしい','むなしい'],3,''),
+    c('now','now',38,'いまの会社で、営業の管理職をしている',['仕事'],['むなしい'],3,''),
+    c('ifA','if',null,'このまま、いまの会社で続ける',[],['安心'],2,''),
+    c('ifB','if',null,'転職して、家具の工房で若手を育てる',[],['夢中','こわい'],4,'')
+  ];
+  const l=(a,ar,b,br,strength,note)=>({id:uid(),from:{card:a,row:ar},to:{card:b,row:br},strength,note,state:'confirmed',source:'self'});
+  const lines=[
+    l('p6','emo','p15','emo',4,'作っているあいだ、時間を忘れていた'),
+    l('p6','val','p15','exp',3,'手を動かす楽しさが、展示づくりに出た'),
+    l('p9','val','p15','exp',3,'一人でいる子に声をかけて回った'),
+    l('p24','exp','now','exp',3,'配属された営業を、そのまま続けてきた'),
+    l('p15','val','ifA','exp',2,'部下の持ち味を見ることはできる'),
+    l('p6','val','ifB','exp',5,'自分の手でつくる仕事に戻る'),
+    l('p9','val','ifB','exp',3,'新しい場所で、自分から声をかける'),
+    l('p15','val','ifB','exp',4,'若手それぞれの持ち味を育てる')
+  ];
+  return {v:1,sample:true,manual:false,needsLayout:true,cards,lines,versions:[],futureText:{}};
+}
+function emptyState(){return {v:1,sample:false,manual:false,needsLayout:true,cards:[],lines:[],versions:[],futureText:{}};}
+function valid(o){return !!o&&Array.isArray(o.cards)&&Array.isArray(o.lines);}
+function normalize(o){
+  o.versions=Array.isArray(o.versions)?o.versions:[]; o.futureText=o.futureText||{};
+  o.cards.forEach(c=>{c.id=String(c.id||uid());c.kind=KINDNAME[c.kind]?c.kind:'past';c.exp=c.exp||'';c.value=c.value||'';c.factTags=c.factTags||[];c.emoTags=c.emoTags||[];c.emoStrength=+c.emoStrength||3;c.x=+c.x||0;c.y=+c.y||0;c.futures=Array.isArray(c.futures)?c.futures.map(String):[];});
+  o.lines=o.lines.filter(l=>l&&l.from&&l.to&&ROWNAME[l.from.row]&&ROWNAME[l.to.row]);
+  o.lines.forEach(l=>{l.id=String(l.id||uid());l.strength=Math.min(5,Math.max(1,+l.strength||3));l.note=l.note||'';l.state=l.state||'confirmed';l.source=l.source||'self';});
+  return o;
+}
+function loadState(){try{const t=localStorage.getItem(KEY);if(!t)return null;const o=JSON.parse(t);return valid(o)?o:null;}catch(e){return null;}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+let S=normalize(loadState()||sampleState());
+/* サンプルの原点（6歳）に、未来の可能性の例を一度だけ入れる */
+function seedFutures(){
+  if(!S.sample||S.seedF)return; S.seedF=true;
+  const c=S.cards.find(c=>c.id==='p6'); if(c&&!c.futures.length)c.futures=['祖父の工房を継ぐ','ものづくりの分野に進む','手を動かして形にすることを、次の世代に教える'];
+}
+seedFutures();
+let futSug=[], futMsg='';
+let sel=null, mode=null, compareId=null, tagHl=null, drag=null, suppressUntil=0, clearAsk=false;
+let Z=1, CW=0, CH=0; /* 地図の倍率と、中身の大きさ */
+let sampleFn=null, downloads=null;
+
+const card=id=>S.cards.find(c=>c.id===id);
+const line=id=>S.lines.find(l=>l.id===id);
+function orderKey(c){const i=S.cards.indexOf(c);return c.kind==='past'?(c.age??0):c.kind==='now'?1000:c.kind==='if'?2000+i:3000+i;}
+function cardLabel(c){
+  if(c.kind==='past')return (c.age??'？')+'歳';
+  if(c.kind==='now')return 'いま'+(c.age!=null?'（'+c.age+'歳）':'');
+  if(c.kind==='future')return '未来'+(c.age!=null?'（'+c.age+'歳）':'');
+  return 'もしも';
+}
+function shortExp(c,n){n=n||16;const t=(c.exp||'').trim();return t?(t.length>n?t.slice(0,n)+'…':t):'（未記入）';}
+function refLabel(ref){const c=card(ref.card);return c?cardLabel(c)+'・'+ROWNAME[ref.row]:'（消えたカード）';}
+function ordered(a,b){const ca=card(a.card),cb=card(b.card);return orderKey(ca)<=orderKey(cb)?[a,b]:[b,a];}
+
+/* 根の強さ：過去のカードの価値観から届いている、確定した線の強さの合計 */
+function rootOf(id,lines,cards){
+  lines=lines||S.lines; cards=cards||S.cards;
+  const vals=cards.filter(c=>c.kind==='past'&&c.value.trim());
+  const reached=new Map();
+  for(const l of lines){
+    if(l.state!=='confirmed'||l.to.card!==id||l.from.row!=='val')continue;
+    if(!vals.some(c=>c.id===l.from.card))continue;
+    reached.set(l.from.card,(reached.get(l.from.card)||0)+l.strength);
+  }
+  let root=0; reached.forEach(v=>{root+=v;});
+  return {root,reached:[...reached.keys()],unmet:vals.filter(c=>!reached.has(c.id)).map(c=>c.id),total:vals.length};
+}
+/* 仮の基準：届いている価値観が半分以上なら「長い」 */
+function lengthOf(r){
+  if(!r.total)return {label:'—',cls:''};
+  if(r.root===0)return {label:'根がない',cls:'none'};
+  return r.reached.length/r.total>=0.5?{label:'長い',cls:'long'}:{label:'短い',cls:''};
+}
+function hasFuture(c){return S.lines.some(l=>l.state==='confirmed'&&l.from.card===c.id&&card(l.to.card)?.kind==='future');}
+function futureCandidate(c){
+  if(c.kind!=='now'&&c.kind!=='if')return null;
+  if(hasFuture(c))return null;
+  const r=rootOf(c.id); if(r.root===0)return null;
+  const sig=r.reached.map(id=>id+':'+S.lines.filter(l=>l.state==='confirmed'&&l.to.card===c.id&&l.from.card===id&&l.from.row==='val').reduce((s,l)=>s+l.strength,0)).join(',');
+  const ai=S.futureText[c.id];
+  const text=(ai&&ai.sig===sig)?ai.text:r.reached.map(id=>'「'+card(id).value+'」').join('')+'が生きる未来';
+  return {text,sig,r,len:lengthOf(r),unmet:r.unmet.map(id=>card(id).value)};
+}
+function chainLines(id){
+  const ok=S.lines.filter(l=>l.state==='confirmed');
+  const walk=(dir)=>{const set=new Set([id]);let grow=true;while(grow){grow=false;for(const l of ok){const a=dir?l.from.card:l.to.card,b=dir?l.to.card:l.from.card;if(set.has(a)&&!set.has(b)){set.add(b);grow=true;}}}return set;};
+  const down=walk(true), up=walk(false);
+  return new Set(ok.filter(l=>(up.has(l.from.card)&&up.has(l.to.card))||(down.has(l.from.card)&&down.has(l.to.card))).map(l=>l.id));
+}
+function possibilities(){
+  const out=[],seen=new Set();
+  for(const l of S.lines){
+    if(l.state!=='confirmed')continue;
+    const a=card(l.from.card),b=card(l.to.card);
+    if(!a||!b||a.kind!=='past'||b.kind!=='past'||!a.value.trim()||!b.value.trim())continue;
+    const k=[a.id,b.id].sort().join('|'); if(seen.has(k))continue; seen.add(k); out.push({a,b});
+  }
+  return out;
+}
+function diffLines(old,cur){
+  const o=new Map(old.map(l=>[l.id,l])), res={added:[],removed:[],changed:[],gone:0};
+  for(const l of cur){const p=o.get(l.id),was=!!p&&p.state==='confirmed',is=l.state==='confirmed';
+    if(is&&!was)res.added.push(l.id);else if(!is&&was)res.removed.push(l.id);else if(is&&was&&p.strength!==l.strength)res.changed.push(l.id);}
+  const ids=new Set(cur.map(l=>l.id));
+  for(const p of old)if(p.state==='confirmed'&&!ids.has(p.id))res.gone++;
+  return res;
+}
+/* 同じ感情タグを持つ、いちばん近い前のカードとのあいだに候補の点線を出す */
+function syncTags(){
+  const sorted=[...S.cards].sort((a,b)=>orderKey(a)-orderKey(b));
+  const want=new Set();
+  sorted.forEach((c,i)=>{if(!c.emoTags.length)return;for(let j=i-1;j>=0;j--){const p=sorted[j];if(p.emoTags.some(t=>c.emoTags.includes(t))){want.add(p.id+'|'+c.id);break;}}});
+  const emo=l=>l.from.row==='emo'&&l.to.row==='emo';
+  S.lines=S.lines.filter(l=>!(l.source==='tag'&&l.state==='candidate'&&emo(l)&&!want.has(l.from.card+'|'+l.to.card)));
+  for(const k of want){const [a,b]=k.split('|');
+    if(S.lines.some(l=>emo(l)&&((l.from.card===a&&l.to.card===b)||(l.from.card===b&&l.to.card===a))))continue;
+    S.lines.push({id:uid(),from:{card:a,row:'emo'},to:{card:b,row:'emo'},strength:2,note:'',state:'candidate',source:'tag'});}
+}
+function getOrigin(){
+  const past=S.cards.filter(c=>c.kind==='past'&&c.age!=null);
+  return past.find(c=>c.origin)||past.slice().sort((a,b)=>a.age-b.age)[0]||null;
+}
+function connect(a,b){
+  const [f,t]=ordered(a,b);
+  const same=S.lines.find(l=>(l.from.card===f.card&&l.from.row===f.row&&l.to.card===t.card&&l.to.row===t.row));
+  if(same){same.state='confirmed';sel={type:'line',id:same.id};return same;}
+  const l={id:uid(),from:f,to:t,strength:3,note:'',state:'confirmed',source:'self'};
+  S.lines.push(l); sel={type:'line',id:l.id}; return l;
+}
+function saveVersion(name){
+  S.versions.unshift({id:uid(),name:(name||'').trim()||('版 '+(S.versions.length+1)),savedAt:new Date().toISOString(),cards:clone(S.cards),lines:clone(S.lines)});
+}
+
+/* ---------- 地図 ---------- */
+const mapEl=$('#map'), sizer=$('#sizer'), inner=$('#inner'), cardsEl=$('#cards'), wires=$('#wires'), side=$('#side');
+function tagsHtml(tags,kind){
+  if(!tags.length)return '';
+  if(kind==='emo')return tags.map(t=>'<button type="button" class="tag emo" data-tag="'+esc(t)+'">#'+esc(t)+'</button>').join('');
+  return '<span class="tags">'+tags.map(t=>'<span class="tag">#'+esc(t)+'</span>').join('')+'</span>';
+}
+function dots(n){let h='<span class="str" role="img" aria-label="強さ'+n+'">';for(let i=1;i<=5;i++)h+='<i'+(i<=n?' class="f"':'')+'></i>';return h+'</span>';}
+function rowHtml(c,row,body){
+  const on=sel&&sel.type==='row'&&sel.card===c.id&&sel.row===row;
+  const src=mode&&mode.type==='connect'&&mode.from.card===c.id&&mode.from.row===row;
+  return '<div class="row r-'+row+(on?' on':'')+(src?' src':'')+'" data-row="'+row+'" tabindex="0" role="button" aria-label="'+esc(cardLabel(c)+'の'+ROWNAME[row])+'">'+
+    '<span class="port l" data-side="l"></span><div class="cell">'+body+'</div><span class="port r" data-side="r"></span></div>';
+}
+function renderCards(){
+  let h='';
+  for(const c of S.cards){
+    const r=(c.kind==='now'||c.kind==='if')?rootOf(c.id):null;
+    const rootless=!!r&&r.total>0&&r.root===0;
+    const ph={past:'起きたこと',now:'いまやっていること',if:'もしも、こうしたら',future:'実現したい姿'}[c.kind];
+    const glow=tagHl&&c.emoTags.includes(tagHl);
+    h+='<article class="card k-'+c.kind+(glow?' glow':'')+'" data-id="'+c.id+'">'+
+      rowHtml(c,'age','<span class="age">'+esc(cardLabel(c))+'</span>'+(c.origin||(getOrigin()===c)?'<span class="chip origin">原点</span>':'')+'<button class="edit" type="button" aria-label="'+esc(cardLabel(c))+'のカードを編集">編集</button>')+
+      rowHtml(c,'exp',c.exp.trim()?esc(c.exp)+tagsHtml(c.factTags,'fact'):'<span class="ph">'+ph+'</span>')+
+      rowHtml(c,'emo',c.emoTags.length?tagsHtml(c.emoTags,'emo')+dots(c.emoStrength):'<span class="ph">感情タグ</span>')+
+      rowHtml(c,'val',c.value.trim()?esc(c.value):'<span class="ph">'+(c.kind==='past'?'まだ言葉になっていない':'価値観')+'</span>')+
+      (rootless?'<p class="warn">価値観からの線が届いていません</p>':'')+'</article>';
+  }
+  for(const c of S.cards){
+    const f=futureCandidate(c); if(!f)continue;
+    h+='<article class="cand" data-for="'+c.id+'" style="opacity:'+(0.55+Math.min(1,f.r.root/12)*0.45).toFixed(2)+'">'+
+      '<p class="cand-k">未来の候補</p><p class="cand-t">'+esc(f.text)+'</p>'+
+      (f.unmet.length?'<p class="cand-u">満たされない価値観：'+f.unmet.map(v=>'「'+esc(v)+'」').join('')+'</p>':'')+
+      '<p class="cand-m">根の強さ '+f.r.root+' ／ 続く長さの目安：'+f.len.label+'</p>'+
+      '<button class="btn sm cand-ok" type="button">確定して未来カードにする</button></article>';
+  }
+  if(!S.cards.length)h='<div class="mapempty"><p>まだカードがありません。<br>「カードを追加」から、最初の原体験を入れてください。</p></div>';
+  cardsEl.innerHTML=h;
+}
+const cardEl=id=>cardsEl.querySelector('.card[data-id="'+id+'"]');
+function place(c){
+  const el=cardEl(c.id); if(el){el.style.left=c.x+'px';el.style.top=c.y+'px';}
+  const cd=cardsEl.querySelector('.cand[data-for="'+c.id+'"]'); if(cd){cd.style.left=(c.x+W+GAP)+'px';cd.style.top=c.y+'px';}
+}
+function autoLayout(){
+  const hOf=id=>{const el=cardEl(id);return el?el.offsetHeight:190;};
+  const past=S.cards.filter(c=>c.kind==='past').sort((a,b)=>(a.age??0)-(b.age??0));
+  past.forEach((c,i)=>{c.x=32+i*STEP;c.y=TOP;});
+  const colX=32+past.length*STEP; let y=TOP;
+  for(const c of [...S.cards.filter(c=>c.kind==='now'),...S.cards.filter(c=>c.kind==='if')]){c.x=colX;c.y=y;y+=hOf(c.id)+112;}
+  for(const f of S.cards.filter(c=>c.kind==='future')){
+    const l=S.lines.find(l=>l.state==='confirmed'&&l.to.card===f.id&&['now','if'].includes(card(l.from.card)?.kind));
+    const src=l&&card(l.from.card);
+    f.x=colX+W+GAP; if(src)f.y=src.y; else{f.y=y;y+=hOf(f.id)+40;}
+  }
+}
+function sizeInner(){
+  let w=0,h=0;
+  cardsEl.querySelectorAll('.card,.cand').forEach(el=>{w=Math.max(w,el.offsetLeft+el.offsetWidth);h=Math.max(h,el.offsetTop+el.offsetHeight);});
+  CW=w+64; CH=h+96;
+  const iw=Math.max(CW,Math.floor(mapEl.clientWidth/Z)), ih=Math.max(CH,Math.floor(mapEl.clientHeight/Z));
+  inner.style.width=iw+'px'; inner.style.height=ih+'px'; inner.style.transform='scale('+Z+')';
+  sizer.style.width=Math.floor(iw*Z)+'px'; sizer.style.height=Math.floor(ih*Z)+'px';
+  wires.setAttribute('width',iw); wires.setAttribute('height',ih);
+  const pct=$('#zPct'); if(pct)pct.textContent=Math.round(Z*100)+'%';
+}
+/* 倍率を変える。ax, ay は画面上の基準点（その下にある場所が動かないように拡大する） */
+const ZSTEPS=[0.2,0.25,0.33,0.5,0.67,0.8,1,1.25,1.5,2];
+function setZoom(nz,ax,ay){
+  nz=Math.min(2,Math.max(0.2,nz)); const r=mapEl.getBoundingClientRect();
+  if(ax==null){ax=r.left+mapEl.clientWidth/2;ay=r.top+mapEl.clientHeight/2;}
+  const px=(mapEl.scrollLeft+ax-r.left)/Z, py=(mapEl.scrollTop+ay-r.top)/Z;
+  Z=nz; sizeInner();
+  mapEl.scrollLeft=px*Z-(ax-r.left); mapEl.scrollTop=py*Z-(ay-r.top);
+  if(typeof UI!=='undefined'){UI.z=Z;saveUI();}
+}
+function fitZoom(){
+  const z=Math.min(1,(mapEl.clientWidth-8)/Math.max(1,CW),(mapEl.clientHeight-8)/Math.max(1,CH));
+  setZoom(z); mapEl.scrollLeft=0; mapEl.scrollTop=0;
+}
+function scrollToCard(id){
+  const el=cardEl(id); if(!el)return;
+  mapEl.scrollTo({left:Math.max(0,(el.offsetLeft+el.offsetWidth/2)*Z-mapEl.clientWidth/2),top:Math.max(0,(el.offsetTop+el.offsetHeight/2)*Z-mapEl.clientHeight/2)});
+}
+function port(ref,sideName){
+  const el=cardEl(ref.card); if(!el)return null;
+  const row=el.querySelector('[data-row="'+ref.row+'"]'); if(!row)return null;
+  return {x:el.offsetLeft+(sideName==='r'?el.offsetWidth:0),y:el.offsetTop+row.offsetTop+row.offsetHeight/2};
+}
+function pathFor(l,rects,lane){
+  const a=rects.find(r=>r.id===l.from.card),b=rects.find(r=>r.id===l.to.card); if(!a||!b)return null;
+  const acx=a.x+a.w/2,bcx=b.x+b.w/2;
+  if(Math.abs(acx-bcx)<a.w*0.6){
+    const p=port(l.from,'r'),q=port(l.to,'r'),k=56+Math.min(70,Math.abs(p.y-q.y)*0.14);
+    return {d:'M'+p.x+' '+p.y+'C'+(p.x+k)+' '+p.y+','+(q.x+k)+' '+q.y+','+q.x+' '+q.y,p,q};
+  }
+  const ltr=acx<bcx,p=port(l.from,ltr?'r':'l'),q=port(l.to,ltr?'l':'r');
+  if(ltr&&q.x-p.x>120){
+    const lo=Math.min(p.y,q.y)-8,hi=Math.max(p.y,q.y)+8;
+    const block=rects.filter(r=>r.id!==a.id&&r.id!==b.id&&r.x<q.x-4&&r.x+r.w>p.x+4&&r.y<hi&&r.y+r.h>lo);
+    if(block.length){
+      const ly=Math.max(...block.map(r=>r.y+r.h))+18+(lane.n++%9)*9;
+      return {d:'M'+p.x+' '+p.y+'C'+(p.x+30)+' '+p.y+','+(p.x+14)+' '+ly+','+(p.x+44)+' '+ly+'L'+(q.x-44)+' '+ly+'C'+(q.x-14)+' '+ly+','+(q.x-30)+' '+q.y+','+q.x+' '+q.y,p,q};
+    }
+  }
+  const dx=Math.max(36,Math.abs(q.x-p.x)*0.45)*(ltr?1:-1);
+  return {d:'M'+p.x+' '+p.y+'C'+(p.x+dx)+' '+p.y+','+(q.x-dx)+' '+q.y+','+q.x+' '+q.y,p,q};
+}
+function renderWires(){
+  const rects=[...cardsEl.querySelectorAll('.card')].map(el=>({id:el.dataset.id,x:el.offsetLeft,y:el.offsetTop,w:el.offsetWidth,h:el.offsetHeight}));
+  const chain=sel&&sel.type==='row'?chainLines(sel.card):null;
+  const ver=compareId&&S.versions.find(v=>v.id===compareId);
+  const diff=ver?diffLines(ver.lines,S.lines):null;
+  const rank={removed:0,candidate:1,confirmed:2};
+  const list=[...S.lines].sort((a,b)=>rank[a.state]-rank[b.state]);
+  const lane={n:0}; let h='';
+  for(const l of list){
+    const g=pathFor(l,rects,lane); if(!g)continue;
+    const isSel=sel&&sel.type==='line'&&sel.id===l.id;
+    let cls='wire s-'+l.state;
+    if(isSel)cls+=' sel';
+    if(chain){cls+=chain.has(l.id)?' hl':' dim';}
+    if(diff){if(diff.added.includes(l.id))cls+=' d-add';else if(diff.removed.includes(l.id))cls+=' d-del';else if(diff.changed.includes(l.id))cls+=' d-chg';}
+    const w=l.state==='confirmed'?SW[l.strength]:1.4;
+    h+='<g class="'+cls+'" data-id="'+l.id+'">'+(isSel?'<path class="halo" d="'+g.d+'" stroke-width="'+(w+7)+'"/>':'')+
+      '<path class="vis" d="'+g.d+'" stroke-width="'+w+'"/><path class="hit" d="'+g.d+'"/>'+
+      (l.state==='confirmed'?'<circle class="end" cx="'+g.p.x+'" cy="'+g.p.y+'" r="2.6"/><circle class="end" cx="'+g.q.x+'" cy="'+g.q.y+'" r="2.6"/>':'')+'</g>';
+  }
+  cardsEl.querySelectorAll('.cand').forEach(el=>{
+    const src=rects.find(r=>r.id===el.dataset.for); if(!src)return;
+    const p={x:src.x+src.w,y:src.y+src.h/2},q={x:el.offsetLeft,y:el.offsetTop+el.offsetHeight/2};
+    h+='<g class="wire fut"><path class="vis" stroke-width="2" d="M'+p.x+' '+p.y+'C'+(p.x+30)+' '+p.y+','+(q.x-30)+' '+q.y+','+q.x+' '+q.y+'"/></g>';
+  });
+  if(drag&&drag.type==='wire'&&drag.pt){
+    const p=port(drag.from,drag.side);
+    if(p)h+='<g class="wire tmp"><path class="vis" stroke-width="2" d="M'+p.x+' '+p.y+'L'+drag.pt.x+' '+drag.pt.y+'"/></g>';
+  }
+  wires.innerHTML=h;
+}
+
+/* ---------- 右の欄 ---------- */
+function effectHtml(l){
+  const a=card(l.from.card),t=card(l.to.card); if(!a||!t)return '';
+  if((t.kind==='now'||t.kind==='if')&&l.from.row==='val'&&a.kind==='past'&&a.value.trim()){
+    const others=S.lines.filter(x=>x.id!==l.id);
+    const cur=rootOf(t.id), up=rootOf(t.id,[...others,{...l,state:'confirmed',strength:5}]), off=rootOf(t.id,others);
+    return '<div class="effect"><span class="lab">この線を変えると（'+esc(cardLabel(t)+'：'+shortExp(t,12))+'）</span>'+
+      '<p>強さ5まで頑張る：根の強さ <b>'+cur.root+' → '+up.root+'</b>、目安 <b>'+lengthOf(cur).label+' → '+lengthOf(up).label+'</b></p>'+
+      '<p>線を外す：根の強さ <b>'+cur.root+' → '+off.root+'</b>、目安 <b>'+lengthOf(cur).label+' → '+lengthOf(off).label+'</b>'+(off.root===0?'（未来の候補は消える）':'')+'</p></div>';
+  }
+  if(a.kind==='past'&&t.kind==='past'&&a.value.trim()&&t.value.trim())
+    return '<div class="effect"><span class="lab">この2つがつながると</span><p><b>「'+esc(a.value)+'」×「'+esc(t.value)+'」</b>という可能性が生まれます。</p></div>';
+  return '';
+}
+function linePanel(l){
+  const st={candidate:'候補',confirmed:'確定',removed:'外した'}[l.state], so={self:'本人が引いた',tag:'タグが一致した',ai:'AIが提案した'}[l.source]||'';
+  return '<p class="lp-t">'+esc(refLabel(l.from))+' <span class="arrow">→</span> '+esc(refLabel(l.to))+'</p>'+
+    '<p class="meta"><span class="chip st-'+l.state+'">'+st+'</span>'+so+'</p>'+
+    '<div class="field"><span class="lab" id="strLab">強さ（線の太さ）</span><div class="seg" role="group" aria-labelledby="strLab">'+
+    [1,2,3,4,5].map(n=>'<button type="button" class="segb'+(l.strength===n?' on':'')+'" data-str="'+n+'" aria-pressed="'+(l.strength===n)+'">'+n+'</button>').join('')+'</div></div>'+
+    '<div class="field"><label class="lab" for="lineNote">ひとこと（なぜつながるか）</label><textarea id="lineNote" rows="2">'+esc(l.note)+'</textarea></div>'+
+    '<div class="acts">'+(l.state!=='confirmed'?'<button class="btn sm primary" type="button" data-act="confirm">'+(l.state==='removed'?'線を戻す':'確定する')+'</button>':'')+
+    (l.state!=='removed'?'<button class="btn sm" type="button" data-act="remove">線を外す</button>':'')+
+    '<button class="btn sm" type="button" data-act="re-from">始点をつなぎ直す</button><button class="btn sm" type="button" data-act="re-to">終点をつなぎ直す</button></div>'+effectHtml(l);
+}
+function renderSide(){
+  const targets=[...S.cards.filter(c=>c.kind==='now'),...S.cards.filter(c=>c.kind==='if')];
+  const rs=targets.map(c=>({c,r:rootOf(c.id)})), max=Math.max(12,...rs.map(x=>x.r.root));
+  let h='<section class="sec"><div class="sec-h"><h2>もしもの比較</h2><button class="btn sm" type="button" data-act="add-if">＋ もしもを足す</button></div>';
+  if(!rs.length)h+='<p class="hint">「いま」や「もしも」のカードを足すと、どれが自分の原体験に根ざしているかを比べられます。</p>';
+  else if(!rs[0].r.total)h+='<p class="hint">過去のカードに価値観を書くと、比べられるようになります。</p>';
+  for(const {c,r} of rs){
+    const len=lengthOf(r), cand=futureCandidate(c);
+    h+='<div class="cmp"><div class="cmp-h"><span class="k'+(c.kind==='now'?' now':'')+'">'+KINDNAME[c.kind]+'</span><button type="button" data-act="sel-card" data-id="'+c.id+'">'+esc(shortExp(c,22))+'</button><span class="len '+len.cls+'">'+len.label+'</span></div>'+
+      '<div class="meter" role="img" aria-label="根の強さ '+r.root+'"><i style="width:'+Math.round(r.root/max*100)+'%"></i></div>'+
+      '<div class="cmp-n"><span>根の強さ <b>'+r.root+'</b></span><span>届いている価値観 <b>'+r.reached.length+' / '+r.total+'</b></span></div>'+
+      '<p class="unmet">満たされていない価値観：'+(r.unmet.length?r.unmet.map(id=>'「'+esc(card(id).value)+'」').join(''):'なし')+'</p>'+
+      (sampleFn&&cand?'<div class="acts"><button class="btn sm" type="button" data-act="ai-future" data-id="'+c.id+'">AIで未来の候補を文にする</button></div>':'')+'</div>';
+  }
+  if(rs.length)h+='<p class="hint">目安は、あなたが引いた線をもとにした仮説です。判定や予測ではありません。届いている価値観が半分以上なら「長い」とする、仮の基準です。</p><p class="hint" id="aiMsg" role="status"></p>';
+  h+='</section>';
+
+  h+='<section class="sec"><div class="sec-h"><h2>'+(sel&&sel.type==='row'?'選んだ行':'選んだ線')+'</h2></div>';
+  const sl=sel&&sel.type==='line'?line(sel.id):null;
+  if(sl)h+=linePanel(sl);
+  else if(sel&&sel.type==='row'){
+    const c=card(sel.card), n=chainLines(sel.card).size;
+    h+='<p class="lp-t">'+esc(refLabel(sel))+'</p><p class="hint">'+(n?'このカードを通る線が '+n+' 本、地図の上で明るくなっています。過去からいま、未来への経路です。':'このカードを通る確定した線は、まだありません。')+'</p>'+
+      '<div class="acts"><button class="btn sm" type="button" data-act="edit-card" data-id="'+c.id+'">このカードを編集</button></div>';
+  }else h+='<p class="hint">線を押すと、太さを変える、つなぎ直す、外すができます。行を押すと、その行を通る経路が明るくなります。</p>';
+  h+='</section>';
+
+  const ps=possibilities();
+  h+='<section class="sec"><div class="sec-h"><h2>つながりから生まれる可能性</h2></div>';
+  h+=ps.length?'<ul class="poss">'+ps.map(p=>'<li>「'+esc(p.a.value)+'」×「'+esc(p.b.value)+'」<small>'+esc(cardLabel(p.a))+' と '+esc(cardLabel(p.b))+' の原体験がつながっている</small></li>').join('')+'</ul>'
+    :'<p class="hint">過去のカードどうしをつなぐと、2つの価値観を合わせた可能性がここに出ます。</p>';
+  h+='</section>';
+
+  side.innerHTML=h;
+}
+
+/* ---------- 左のメニュー ---------- */
+function renderMenu(){
+  let h='';
+  for(const [k,name] of [['past','過去'],['now','いま'],['if','もしも'],['future','未来']]){
+    let cs=S.cards.filter(c=>c.kind===k); if(!cs.length)continue;
+    if(k==='past')cs=cs.slice().sort((a,b)=>(a.age??0)-(b.age??0));
+    h+='<p class="lab">'+name+'</p><ul class="clist">'+cs.map(c=>'<li><button type="button" class="citem'+(sel&&sel.type==='row'&&sel.card===c.id?' on':'')+'" data-act="sel-card" data-id="'+c.id+'" title="'+esc(c.exp)+'">'+(k==='past'?'<span class="ck">'+esc((c.age??'？')+'歳')+'</span>':'')+'<span class="ct">'+esc((c.exp||'').trim()||'（未記入）')+'</span></button></li>').join('')+'</ul>';
+  }
+  $('#cardList').innerHTML=h||'<p class="hint">まだカードがありません。</p>';
+  let v='<div class="ver"><input type="text" id="verName" placeholder="版の名前" aria-label="版の名前"><button class="btn sm" type="button" data-act="ver-save">いまの地図を保存</button></div>';
+  v+=S.versions.length?'<ul class="vers">'+S.versions.map(x=>'<li><span>'+esc(x.name)+'<small>'+esc(new Date(x.savedAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))+'</small></span>'+
+      '<button class="btn sm" type="button" data-act="ver-cmp" data-id="'+x.id+'">'+(compareId===x.id?'比較をやめる':'いまと比べる')+'</button><button class="btn sm" type="button" data-act="ver-restore" data-id="'+x.id+'">この版に戻す</button></li>').join('')+'</ul>'
+    :'<p class="hint">変える前の地図を保存しておくと、あとで見比べたり、元に戻したりできます。</p>';
+  $('#verBox').innerHTML=v;
+}
+
+/* ---------- 原点の線 ---------- */
+function renderOrigin(){
+  const el=$('#originBody'), now=S.cards.find(c=>c.kind==='now'), o=getOrigin();
+  if(!now||now.age==null||!o){el.innerHTML='<p class="empty">過去のカードと、年齢を入れた「いま」のカードがそろうと、原点からいまへの線と、その先へ延びる未来の線が出ます。</p>';return;}
+  const cx=320,my=134,X=a=>48+Math.min(1,Math.max(0,a/Math.max(1,now.age)))*(cx-104),Y=s=>66+((s||3)-1)/4*136;
+  const ox=X(o.age),oy=Y(o.emoStrength),fx=2*cx-ox,fy=2*my-oy;
+  const span=Math.max(0,now.age-o.age), fAge=now.age+span, fs=o.futures||[];
+  let g='';
+  for(const c of S.cards.filter(c=>c.kind==='past'&&c.age!=null&&c!==o)){
+    const x=X(c.age),y=Y(c.emoStrength);
+    g+='<g class="odot" data-id="'+c.id+'" tabindex="0" role="button" aria-label="'+c.age+'歳のカードを原点にする"><circle cx="'+x+'" cy="'+y+'" r="14" fill="transparent"/><circle cx="'+x+'" cy="'+y+'" r="5" fill="#8f919e"/><text x="'+(x+9)+'" y="'+(y-9)+'" font-size="12" fill="#a0a1ad">'+c.age+'歳</text></g>';
+  }
+  const up=fy<=my;
+  el.innerHTML='<div class="ochart"><svg viewBox="0 0 690 270" role="img" aria-label="原点（'+o.age+'歳）からいま（'+now.age+'歳）への線を、同じ年数だけ未来（'+fAge+'歳）へ延ばした図">'+
+    '<defs><marker id="oa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b3a4ff"/></marker><marker id="ob" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6e707d"/></marker></defs>'+
+    '<text x="156" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">過去</text><text x="320" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">現在</text><text x="484" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">未来</text>'+
+    '<line x1="320" y1="34" x2="320" y2="226" stroke="#2b2f3b" stroke-width="1.5"/>'+
+    '<path d="M'+fx+' '+(fy+13)+'C'+fx+' 252,'+(ox+70)+' 250,'+(ox+8)+' '+(oy+12)+'" fill="none" stroke="#6e707d" stroke-width="1.25" stroke-dasharray="2 5" marker-end="url(#ob)"/>'+
+    '<text x="320" y="264" text-anchor="middle" font-size="12" fill="#a0a1ad">未来の可能性は、原点の体験から生まれる</text>'+
+    g+
+    '<line x1="'+ox+'" y1="'+oy+'" x2="'+cx+'" y2="'+my+'" stroke="#ece8dc" stroke-width="2"/>'+
+    '<line x1="'+cx+'" y1="'+my+'" x2="'+(fx-(fx-cx)*0.045)+'" y2="'+(fy-(fy-my)*0.045)+'" stroke="#b3a4ff" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" marker-end="url(#oa)"/>'+
+    '<circle cx="'+ox+'" cy="'+oy+'" r="7.5" fill="#ece8dc"/><text x="'+(ox-6)+'" y="'+(oy-14)+'" font-size="13" font-weight="700" fill="#ece8dc">原点 '+o.age+'歳</text>'+
+    '<circle cx="'+cx+'" cy="'+my+'" r="7.5" fill="#ece8dc"/><text x="'+(cx+12)+'" y="'+(my+(up?24:-14))+'" font-size="13" font-weight="700" fill="#ece8dc">いま '+now.age+'歳</text>'+
+    '<circle cx="'+fx+'" cy="'+fy+'" r="8" fill="rgba(179,164,255,.14)" stroke="#b3a4ff" stroke-width="2" stroke-dasharray="2 3"/>'+
+    '<text x="'+(fx+15)+'" y="'+(fy-1)+'" font-size="13" font-weight="700" fill="#ece8dc">未来の点 '+fAge+'歳</text><text x="'+(fx+15)+'" y="'+(fy+15)+'" font-size="12" fill="#a0a1ad">いまから'+span+'年先</text>'+
+    '</svg></div>'+
+    '<div class="omat"><span class="lab">未来の点（'+fAge+'歳）の可能性</span>'+
+    (fs.length?'<ul class="flist">'+fs.map((t,i)=>'<li><span>'+esc(t)+'</span><button type="button" class="fx" data-fdel="'+i+'" aria-label="「'+esc(t)+'」を消す">×</button></li>').join('')+'</ul>':'<p class="hint">まだありません。原点の体験から考えられる未来を、下に書き足してください。</p>')+
+    '<div class="ver"><input type="text" id="futIn" placeholder="例：祖父の工房を継ぐ" aria-label="未来の可能性を書く"><button class="btn sm" type="button" data-fadd="1">足す</button></div>'+
+    (sampleFn?'<div class="acts"><button class="btn sm" type="button" id="futAi">AIに可能性を出してもらう</button><span class="hint">原点といまのカードの内容がClaudeに送られます。</span></div>':'')+
+    (futSug.length?'<div class="chips">'+futSug.map((t,i)=>'<button type="button" class="pick ai" data-fsug="'+i+'">＋ '+esc(t)+'</button>').join('')+'</div>':'')+
+    '<p class="hint" id="futMsg" role="status">'+esc(futMsg)+'</p>'+
+    '<span class="lab">材料（原点 '+o.age+'歳のカード）</span><dl><dt>体験</dt><dd>'+esc(o.exp||'（未記入）')+'</dd><dt>感情</dt><dd>'+(o.emoTags.length?o.emoTags.map(t=>'#'+esc(t)).join(' '):'（未記入）')+'</dd><dt>価値観</dt><dd>'+esc(o.value||'まだ言葉になっていない')+'</dd></dl>'+
+    '<p class="hint">未来の点の年齢は、原点からいままでの'+span+'年を、いまから先へ同じだけ延ばしたものです（'+o.age+'歳 → '+now.age+'歳 → '+fAge+'歳）。人は、自分が体験したことしか再現できません。新しくなるのは手段で、もとになるのは原点の体験です。点の高さは感情の強さ（下ほど強い）です。ほかの点を押すと、原点を変えられます。</p></div>';
+}
+
+/* ---------- 上の帯 ---------- */
+function renderBars(){
+  const n=$('#notice');
+  if(clearAsk)n.innerHTML='<span>すべてのカードと線、版を消して、空の地図にします。元には戻せません。</span><button class="btn sm danger" type="button" data-act="clear-yes">空にする</button><button class="btn sm" type="button" data-act="clear-no">やめる</button>';
+  else if(S.sample)n.innerHTML='<span><b>サンプル</b>を表示しています（いまの会社に悩む、架空の38歳の例）。入力した内容は、この端末のブラウザの中だけに保存されます。</span><button class="btn sm" type="button" data-act="clear">空にして自分の原体験を入れる</button>';
+  else n.innerHTML='<span>入力した内容は、この端末のブラウザの中だけに保存されます。別の端末で使うときは「書き出す・読み込む」を使ってください。</span>'+(S.cards.length?'<button class="btn sm" type="button" data-act="clear">すべて消す</button>':'');
+  const m=$('#modeBar'); let h='';
+  if(mode&&mode.type==='connect')h='<span>「'+esc(refLabel(mode.from))+'」からつなぐ先の行を押してください。</span><button class="btn sm" type="button" data-act="mode-off">やめる</button>';
+  else if(mode&&mode.type==='reconnect')h='<span>つなぎ直す先の行を押してください。</span><button class="btn sm" type="button" data-act="mode-off">やめる</button>';
+  else if(compareId){
+    const v=S.versions.find(v=>v.id===compareId);
+    if(v){const d=diffLines(v.lines,S.lines);
+      h='<span>「'+esc(v.name)+'」といまを比べています。</span><span class="k"><i style="background:var(--add)"></i>増えた線 '+d.added.length+'</span><span class="k"><i style="background:var(--del)"></i>外した線 '+d.removed.length+'</span><span class="k"><i style="background:var(--chg)"></i>太さが変わった線 '+d.changed.length+'</span>'+(d.gone?'<span class="k">カードごと消えた線 '+d.gone+'</span>':'')+'<button class="btn sm" type="button" data-act="cmp-off">比較をやめる</button>';}
+  }
+  m.innerHTML=h; m.hidden=!h;
+}
+
+function render(){
+  syncTags();
+  if(sel&&sel.type==='line'&&!line(sel.id))sel=null;
+  if(sel&&sel.type==='row'&&!card(sel.card))sel=null;
+  if(compareId&&!S.versions.some(v=>v.id===compareId))compareId=null;
+  renderCards();
+  if(S.needsLayout||!S.manual){autoLayout();S.needsLayout=false;}
+  S.cards.forEach(place);
+  sizeInner(); renderWires(); renderSide(); renderMenu(); renderOrigin(); renderBars(); persist();
+}
+
+/* ---------- 操作：地図 ---------- */
+function pickRow(ref){
+  if(mode&&mode.type==='connect'){if(ref.card!==mode.from.card)connect(mode.from,ref);mode=null;return true;}
+  if(mode&&mode.type==='reconnect'){
+    const l=line(mode.line);
+    if(l){const other=mode.end==='from'?l.to:l.from;
+      if(ref.card!==other.card){l[mode.end]=ref;const [a,b]=ordered(l.from,l.to);l.from=a;l.to=b;if(l.state==='candidate')l.state='confirmed';l.source='self';}}
+    mode=null;return true;
+  }
+  return false;
+}
+function endDrag(){window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);}
+function onMove(e){
+  if(!drag)return;
+  if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>4)drag.moved=true;
+  if(!drag.moved)return;
+  if(drag.type==='pan'){mapEl.scrollLeft=drag.sl-(e.clientX-drag.sx);mapEl.scrollTop=drag.st-(e.clientY-drag.sy);return;}
+  if(drag.type==='card'){
+    const mr=mapEl.getBoundingClientRect(), m=34;
+    if(e.clientX>mr.right-m)mapEl.scrollLeft+=14; else if(e.clientX<mr.left+m)mapEl.scrollLeft-=14;
+    if(e.clientY>mr.bottom-m)mapEl.scrollTop+=14; else if(e.clientY<mr.top+m)mapEl.scrollTop-=14;
+    drag.c.x=Math.max(8,Math.round(drag.x0+((e.clientX-drag.sx)+(mapEl.scrollLeft-drag.sl))/Z));
+    drag.c.y=Math.max(8,Math.round(drag.y0+((e.clientY-drag.sy)+(mapEl.scrollTop-drag.st))/Z));
+    const el=cardEl(drag.c.id); if(el)el.classList.add('dragging');
+    place(drag.c);sizeInner();renderWires();
+  }
+  else{const r=inner.getBoundingClientRect();drag.pt={x:(e.clientX-r.left)/Z,y:(e.clientY-r.top)/Z};renderWires();}
+}
+function onUp(e){
+  endDrag(); const d=drag; drag=null; if(!d)return;
+  if(d.type==='pan'){inner.classList.remove('panning');if(d.moved)suppressUntil=performance.now()+120;return;}
+  if(d.type==='card'){if(d.moved){S.manual=true;suppressUntil=performance.now()+120;render();}return;}
+  suppressUntil=performance.now()+120;
+  if(d.moved){
+    const t=document.elementFromPoint(e.clientX,e.clientY), row=t&&t.closest('.card .row');
+    if(row){const to={card:row.closest('.card').dataset.id,row:row.dataset.row};if(to.card!==d.from.card){connect(d.from,to);mode=null;}}
+  }else if(!pickRow(d.from)){mode={type:'connect',from:d.from};}
+  render();
+}
+inner.addEventListener('pointerdown',e=>{
+  if(e.button)return;
+  const p=e.target.closest('.port');
+  if(p){const cd=p.closest('.card');if(!cd)return;e.preventDefault();
+    drag={type:'wire',from:{card:cd.dataset.id,row:p.closest('.row').dataset.row},side:p.dataset.side,moved:false,sx:e.clientX,sy:e.clientY};}
+  else{const cd=e.target.closest('.card');
+    if(e.target.closest('button'))return;
+    if(cd){const c=card(cd.dataset.id);drag={type:'card',c,x0:c.x,y0:c.y,sl:mapEl.scrollLeft,st:mapEl.scrollTop,moved:false,sx:e.clientX,sy:e.clientY};}
+    else{
+      if(e.pointerType==='touch'||e.target.closest('.cand,.wire'))return;
+      e.preventDefault(); inner.classList.add('panning');
+      drag={type:'pan',sl:mapEl.scrollLeft,st:mapEl.scrollTop,moved:false,sx:e.clientX,sy:e.clientY};
+    }}
+  window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
+});
+inner.addEventListener('click',e=>{
+  if(performance.now()<suppressUntil)return;
+  if(e.target.closest('.port'))return;
+  const w=e.target.closest('.wire[data-id]');
+  if(w){sel={type:'line',id:w.dataset.id};mode=null;render();return;}
+  const ed=e.target.closest('.edit'); if(ed){openCard(ed.closest('.card').dataset.id);return;}
+  const ok=e.target.closest('.cand-ok'); if(ok){confirmCandidate(ok.closest('.cand').dataset.for);return;}
+  if(e.target.closest('.cand'))return;
+  const tg=e.target.closest('.tag.emo');
+  if(tg&&!mode){tagHl=tagHl===tg.dataset.tag?null:tg.dataset.tag;render();return;}
+  const row=e.target.closest('.card .row');
+  if(row){const ref={card:row.closest('.card').dataset.id,row:row.dataset.row};if(!pickRow(ref))sel={type:'row',card:ref.card,row:ref.row};render();return;}
+  sel=null;tagHl=null;render();
+});
+inner.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('row')){e.preventDefault();e.target.click();}});
+function confirmCandidate(id){
+  const c=card(id), f=futureCandidate(c); if(!f)return;
+  const nc={id:uid(),kind:'future',age:null,exp:f.text,factTags:[],emoTags:[],emoStrength:3,value:f.r.reached.map(i=>card(i).value).join('／'),x:c.x+W+GAP,y:c.y,origin:false};
+  S.cards.push(nc);
+  S.lines.push({id:uid(),from:{card:c.id,row:'exp'},to:{card:nc.id,row:'exp'},strength:3,note:'',state:'confirmed',source:'self'});
+  sel={type:'row',card:nc.id,row:'exp'}; render();
+}
+
+/* ---------- 操作：右の欄と帯 ---------- */
+const selLine=()=>sel&&sel.type==='line'?line(sel.id):null;
+function onPanelClick(e){
+  const b=e.target.closest('button'); if(!b)return;
+  const l=selLine(), id=b.dataset.id;
+  if(b.dataset.str){if(l){l.strength=+b.dataset.str;render();}return;}
+  switch(b.dataset.act){
+    case 'confirm': if(l){l.state='confirmed';render();} break;
+    case 'remove': if(l){l.state='removed';render();} break;
+    case 're-from': case 're-to': if(l){mode={type:'reconnect',line:l.id,end:b.dataset.act==='re-from'?'from':'to'};render();} break;
+    case 'add-if': openCard(null,'if'); break;
+    case 'sel-card': sel={type:'row',card:id,row:'exp'};render();scrollToCard(id); break;
+    case 'edit-card': openCard(id); break;
+    case 'ver-save': saveVersion($('#verName').value);render(); break;
+    case 'ver-cmp': compareId=compareId===id?null:id;sel=null;render(); break;
+    case 'ver-restore': {const v=S.versions.find(v=>v.id===id);if(v){saveVersion('戻す前（自動保存）');S.cards=clone(v.cards);S.lines=clone(v.lines);S.manual=true;sel=null;compareId=null;mode=null;render();}} break;
+    case 'ai-future': aiFuture(id,b); break;
+  }
+}
+side.addEventListener('click',onPanelClick);
+$('#menu').addEventListener('click',onPanelClick);
+side.addEventListener('input',e=>{if(e.target.id==='lineNote'){const l=selLine();if(l){l.note=e.target.value;persist();}}});
+document.querySelector('.app').addEventListener('click',e=>{
+  const b=e.target.closest('.notice button,.modebar button'); if(!b)return;
+  switch(b.dataset.act){
+    case 'clear': clearAsk=true;renderBars(); break;
+    case 'clear-no': clearAsk=false;renderBars(); break;
+    case 'clear-yes': clearAsk=false;S=emptyState();sel=null;mode=null;compareId=null;render(); break;
+    case 'mode-off': mode=null;render(); break;
+    case 'cmp-off': compareId=null;render(); break;
+  }
+});
+function addFuture(t){t=String(t||'').trim();const o=getOrigin();if(!t||!o)return;if(!o.futures.includes(t))o.futures.push(t);futMsg='';render();}
+$('#originBody').addEventListener('click',e=>{
+  const d=e.target.closest('.odot');
+  if(d){S.cards.forEach(c=>{c.origin=c.id===d.dataset.id;});futSug=[];futMsg='';render();return;}
+  const b=e.target.closest('button'); if(!b)return; const o=getOrigin(); if(!o)return;
+  if(b.dataset.fdel!=null){o.futures.splice(+b.dataset.fdel,1);render();}
+  else if(b.dataset.fadd){addFuture($('#futIn').value);}
+  else if(b.dataset.fsug!=null){const t=futSug.splice(+b.dataset.fsug,1)[0];addFuture(t);}
+  else if(b.id==='futAi'){aiFutures(b);}
+});
+$('#originBody').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='futIn'&&!e.isComposing){e.preventDefault();addFuture(e.target.value);}});
+async function aiFutures(btn){
+  const o=getOrigin(), now=S.cards.find(c=>c.kind==='now'); if(!sampleFn||!o||!now)return;
+  btn.disabled=true; const m=$('#futMsg'); if(m)m.textContent='考えています…';
+  try{
+    const fAge=now.age+Math.max(0,now.age-o.age);
+    const arr=await sampleFn.json('ある人の原点の体験と、いまの状況です。原点の体験がもとになって、'+fAge+'歳ごろまでに形になりうる未来の可能性を4つ、それぞれ24字以内の日本語で出してください。「祖父の工房を継ぐ」「ものづくりの分野に進む」のように、体言止めか動詞で終える短い言い方にしてください。本人が選ぶための候補なので、助言や評価はしないでください。JSONの文字列配列だけを返してください。\n\n原点（'+o.age+'歳）の体験: '+o.exp.slice(0,400)+'\n感情: '+o.emoTags.join('、')+'\n価値観: '+(o.value||'（未記入）')+'\nいま（'+now.age+'歳）: '+now.exp.slice(0,300)+'\nすでに挙がっている可能性: '+(o.futures.join('、')||'なし'),{modelTier:'quick'});
+    futSug=(Array.isArray(arr)?arr:[]).map(String).map(t=>t.trim()).filter(t=>t&&!o.futures.includes(t)).slice(0,4);
+    futMsg=futSug.length?'足したいものを押してください。':'候補を出せませんでした。手で書き足してください。';
+  }catch(err){futSug=[];futMsg=aiCopy(err&&err.code);}
+  renderOrigin();
+}
+$('#originBody').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('.odot')){e.preventDefault();e.target.closest('.odot').dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+$('#addBtn').addEventListener('click',()=>openCard(null,'past'));
+document.querySelector('.legend').addEventListener('click',e=>{
+  const b=e.target.closest('[data-jump]'); if(!b)return;
+  if(b.dataset.jump==='past'){mapEl.scrollTo({left:0,top:0,behavior:'smooth'});return;}
+  const c=S.cards.find(c=>c.kind==='now')||S.cards.find(c=>c.kind==='if'), el=c&&cardEl(c.id);
+  if(el)mapEl.scrollTo({left:Math.max(0,el.offsetLeft*Z-120),top:0,behavior:'smooth'});
+});
+$('#layoutBtn').addEventListener('click',()=>{S.manual=false;S.needsLayout=true;render();mapEl.scrollTo({left:0,top:0});});
+
+/* ---------- カードの入力 ---------- */
+const dlg=$('#cardDlg'); let editing=null, fStr=3, fEmos=new Set(), delAsk=false;
+function kindUI(){
+  const k=$('#f-kind').value;
+  $('#f-age-wrap').hidden=k==='if';
+  $('#f-age-lab').textContent={past:'年齢（その体験をしたとき）',now:'いまの年齢',future:'めざす年齢（なくてもよい）',if:'年齢'}[k];
+  $('#f-exp-lab').textContent={past:'体験（起きたことだけ）',now:'いまやっていること・やりたいこと',if:'もしも、こうしたら',future:'実現したい姿'}[k];
+  $('#f-origin-wrap').hidden=k!=='past';
+  $('#f-links-wrap').hidden=k==='past'||!$('#f-links').children.length;
+}
+function strUI(){$('#f-str').innerHTML=[1,2,3,4,5].map(n=>'<button type="button" class="segb'+(fStr===n?' on':'')+'" data-n="'+n+'" aria-pressed="'+(fStr===n)+'">'+n+'</button>').join('');}
+function emoUI(){$('#f-emos').innerHTML=EMOS.map(t=>'<button type="button" class="pick'+(fEmos.has(t)?' on':'')+'" data-t="'+t+'" aria-pressed="'+fEmos.has(t)+'">'+t+'</button>').join('');}
+function openCard(id,kind){
+  editing=id?card(id):null; const c=editing; delAsk=false;
+  $('#cardDlgT').textContent=c?'カードを編集':'カードを追加';
+  $('#f-kind').value=c?c.kind:(kind||'past');
+  $('#f-age').value=c&&c.age!=null?c.age:'';
+  $('#f-exp').value=c?c.exp:''; $('#f-fact').value=c?c.factTags.join(' '):'';
+  fEmos=new Set(c?c.emoTags.filter(t=>EMOS.includes(t)):[]);
+  $('#f-emo-free').value=c?c.emoTags.filter(t=>!EMOS.includes(t)).join(' '):'';
+  fStr=c?c.emoStrength:3; $('#f-val').value=c?c.value:''; $('#f-origin').checked=!!(c&&c.origin);
+  $('#f-links').innerHTML=S.cards.filter(p=>p.kind==='past'&&p.value.trim()&&(!c||p.id!==c.id)).map(p=>{
+    const ex=c&&S.lines.find(l=>l.state==='confirmed'&&l.from.card===p.id&&l.from.row==='val'&&l.to.card===c.id);
+    return '<label for="f-link-'+p.id+'"><span>「'+esc(p.value)+'」（'+esc(cardLabel(p))+'）</span><select id="f-link-'+p.id+'" data-p="'+p.id+'"><option value="0">つながない</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(ex&&ex.strength===n?' selected':'')+'>強さ'+n+'</option>').join('')+'</select></label>';
+  }).join('');
+  $('#f-del').hidden=!c; $('#f-del').textContent='削除';
+  $('#aiBox').hidden=!sampleFn; $('#aiOut').textContent='';
+  strUI(); emoUI(); kindUI();
+  if(dlg.showModal)dlg.showModal(); else dlg.setAttribute('open','');
+}
+$('#f-kind').addEventListener('change',kindUI);
+$('#f-str').addEventListener('click',e=>{const b=e.target.closest('button');if(b){fStr=+b.dataset.n;strUI();}});
+$('#f-emos').addEventListener('click',e=>{const b=e.target.closest('button');if(b){const t=b.dataset.t;fEmos.has(t)?fEmos.delete(t):fEmos.add(t);emoUI();}});
+$('#f-cancel').addEventListener('click',()=>dlg.close());
+$('#f-del').addEventListener('click',()=>{
+  if(!editing)return;
+  if(!delAsk){delAsk=true;$('#f-del').textContent='本当に削除する（線も消えます）';return;}
+  const id=editing.id; S.cards=S.cards.filter(c=>c.id!==id); S.lines=S.lines.filter(l=>l.from.card!==id&&l.to.card!==id);
+  dlg.close(); render();
+});
+$('#cardForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const kind=$('#f-kind').value, ageRaw=$('#f-age').value.trim(), split=s=>s.split(/[\s　,、#]+/).map(t=>t.trim()).filter(Boolean);
+  const data={kind,age:kind==='if'||ageRaw===''?null:Math.max(0,Math.min(120,Math.round(+ageRaw))),exp:$('#f-exp').value.trim(),factTags:split($('#f-fact').value),
+    emoTags:[...new Set([...EMOS.filter(t=>fEmos.has(t)),...split($('#f-emo-free').value)])],emoStrength:fStr,value:$('#f-val').value.trim(),origin:kind==='past'&&$('#f-origin').checked};
+  let c=editing;
+  if(c)Object.assign(c,data);
+  else{
+    const same=S.cards.filter(x=>x.kind===kind), last=same[same.length-1];
+    c=Object.assign({id:uid(),x:last?last.x+(kind==='past'?STEP:0):32,y:last?last.y+(kind==='past'?0:260):TOP},data);
+    S.cards.push(c);
+  }
+  if(data.origin)S.cards.forEach(x=>{if(x!==c)x.origin=false;});
+  if(kind!=='past')$('#f-links').querySelectorAll('select').forEach(s=>{
+    const p=s.dataset.p, n=+s.value, ex=S.lines.find(l=>l.from.card===p&&l.from.row==='val'&&l.to.card===c.id);
+    if(n>0){if(ex){ex.state='confirmed';ex.strength=n;}else S.lines.push({id:uid(),from:{card:p,row:'val'},to:{card:c.id,row:'exp'},strength:n,note:'',state:'confirmed',source:'self'});}
+    else if(ex&&ex.state==='confirmed')ex.state='removed';
+  });
+  sel={type:'row',card:c.id,row:'exp'};
+  dlg.close(); render();
+  scrollToCard(c.id);
+});
+
+/* ---------- AI（使えるときだけ） ---------- */
+function aiCopy(code){
+  if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){sampleFn=null;return 'AIはこの画面では使えません。手で書いて進められます。';}
+  if(code==='rate_limited')return 'いまは混み合っています。少し待ってから、もう一度押してください。';
+  if(code==='session_expired')return 'サインインし直してから、もう一度押してください。';
+  return '候補を出せませんでした。もう一度押すか、手で書いてください。';
+}
+$('#aiBtn').addEventListener('click',async()=>{
+  const out=$('#aiOut'), exp=$('#f-exp').value.trim(); if(!sampleFn)return;
+  if(!exp){out.textContent='先に体験を書いてください。';return;}
+  const btn=$('#aiBtn'); btn.disabled=true; out.textContent='考えています…';
+  try{
+    const emos=[...fEmos].join('、')+' '+$('#f-emo-free').value;
+    const arr=await sampleFn.json('次は、ある人の原体験です。この体験から生まれたと考えられる価値観の候補を3つ、それぞれ20字以内の日本語で出してください。本人が選ぶための候補なので、評価や断定はしないでください。JSONの文字列配列だけを返してください。例: ["自分から声をかける","手を動かして形にする","人の持ち味を生かす"]\n\n年齢: '+($('#f-age').value||'不明')+'\n体験: '+exp.slice(0,600)+'\n感情: '+emos.slice(0,200),{modelTier:'quick'});
+    const list=(Array.isArray(arr)?arr:[]).map(String).filter(Boolean).slice(0,3);
+    out.innerHTML=list.length?list.map(v=>'<button type="button" class="pick ai" data-v="'+esc(v)+'">'+esc(v)+'</button>').join(''):'候補を出せませんでした。手で書いてください。';
+  }catch(err){out.textContent=aiCopy(err&&err.code);btn.hidden=!sampleFn;}
+  finally{btn.disabled=false;}
+});
+$('#aiOut').addEventListener('click',e=>{const b=e.target.closest('.pick');if(b)$('#f-val').value=b.dataset.v;});
+async function aiFuture(id,btn){
+  const c=card(id), f=c&&futureCandidate(c); if(!sampleFn||!f)return;
+  const msg=$('#aiMsg'); btn.disabled=true; if(msg)msg.textContent='考えています…';
+  try{
+    const mat=f.r.reached.map(i=>{const p=card(i);return '・'+p.age+'歳の体験「'+p.exp.slice(0,200)+'」から生まれた価値観「'+p.value+'」';}).join('\n');
+    const res=await sampleFn('ある人が「'+c.exp.slice(0,200)+'」という選択を考えています。この選択には、次の原体験と価値観がつながっています。\n'+mat+'\n\nこれらの価値観が生きたときに、どんな未来がありうるかを、60字以内の日本語1文で書いてください。本人が見直すための仮説なので、断定や助言はせず、「〜している未来」のような形で終えてください。文だけを返してください。',{modelTier:'quick'});
+    const text=String(res.text||'').trim().replace(/^「|」$/g,'').slice(0,90);
+    if(text){S.futureText[id]={text,sig:f.sig};render();}
+    else if(msg)msg.textContent='候補を出せませんでした。';
+  }catch(err){const t=aiCopy(err&&err.code);render();const m=$('#aiMsg');if(m)m.textContent=t;}
+}
+
+/* ---------- 書き出す・読み込む ---------- */
+const io=$('#ioDlg');
+$('#ioBtn').addEventListener('click',()=>{$('#ioText').value=JSON.stringify(S);$('#ioPaste').value='';$('#ioMsg').textContent='';$('#ioFile').value='';$('#ioSave').hidden=!downloads&&!!window.claude;if(io.showModal)io.showModal();else io.setAttribute('open','');});
+$('#ioClose').addEventListener('click',()=>io.close());
+$('#ioCopy').addEventListener('click',()=>{
+  const t=$('#ioText'), done=()=>{$('#ioMsg').textContent='コピーしました。メモなどに貼り付けて保管してください。';}, fall=()=>{t.focus();t.select();$('#ioMsg').textContent='内容を選択しました。そのままコピーしてください。';};
+  try{navigator.clipboard.writeText(t.value).then(done,fall);}catch(e){fall();}
+});
+$('#ioSave').addEventListener('click',async()=>{
+  if(!downloads){
+    if(window.claude)return;
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('#ioText').value],{type:'application/json'}));a.download='gentaiken-database.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);$('#ioMsg').textContent='保存しました。';return;
+  }
+  try{await downloads.save({filename:'gentaiken-database.json',data:$('#ioText').value});$('#ioMsg').textContent='保存しました。';}
+  catch(err){$('#ioMsg').textContent=err&&err.code==='declined'?'':'ファイルに保存できませんでした。「コピーする」を使ってください。';}
+});
+function importText(t){
+  try{const o=JSON.parse(t); if(!valid(o))throw 0; S=normalize(o); S.sample=false; S.needsLayout=false; S.manual=true; sel=null;mode=null;compareId=null; io.close(); render(); return true;}
+  catch(e){$('#ioMsg').textContent='読み込めませんでした。書き出した内容を、そのまま貼り付けてください。';return false;}
+}
+$('#ioLoad').addEventListener('click',()=>{
+  const f=$('#ioFile').files&&$('#ioFile').files[0];
+  if(f){const r=new FileReader();r.onload=()=>importText(String(r.result));r.onerror=()=>{$('#ioMsg').textContent='ファイルを開けませんでした。';};r.readAsText(f);}
+  else importText($('#ioPaste').value);
+});
+
+/* ---------- 領域の大きさ（境目を引っぱって変える） ---------- */
+const UIKEY='gentaiken-ui-v1', appEl=document.querySelector('.app');
+const LIM={lw:[160,440],rw:[240,600],mh:[220,1600]}, DEF={lw:224,rw:344,mh:0,z:1};
+let UI=Object.assign({},DEF);
+try{const u=JSON.parse(localStorage.getItem(UIKEY)||'{}');for(const k in DEF)if(typeof u[k]==='number')UI[k]=u[k];}catch(e){}
+function applyUI(){
+  appEl.style.setProperty('--lw',UI.lw+'px'); appEl.style.setProperty('--rw',UI.rw+'px');
+  if(UI.mh)appEl.style.setProperty('--mh',UI.mh+'px'); else appEl.style.removeProperty('--mh');
+}
+function saveUI(){try{localStorage.setItem(UIKEY,JSON.stringify(UI));}catch(e){}}
+function splitter(el,key,sign,axis){
+  const cur=()=>key==='mh'?mapEl.offsetHeight:UI[key];
+  const set=v=>{UI[key]=Math.round(Math.min(LIM[key][1],Math.max(LIM[key][0],v)));applyUI();sizeInner();renderWires();};
+  el.addEventListener('pointerdown',e=>{
+    if(e.button)return; e.preventDefault();
+    const s0=axis==='x'?e.clientX:e.clientY, v0=cur(); el.classList.add('on');
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+    const mv=ev=>set(v0+sign*((axis==='x'?ev.clientX:ev.clientY)-s0));
+    const up=()=>{el.classList.remove('on');el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.removeEventListener('pointercancel',up);saveUI();};
+    el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  });
+  el.addEventListener('keydown',e=>{
+    const k=e.key, d=axis==='x'?(k==='ArrowRight'?1:k==='ArrowLeft'?-1:0):(k==='ArrowDown'?1:k==='ArrowUp'?-1:0);
+    if(!d)return; e.preventDefault(); set(cur()+sign*d*24); saveUI();
+  });
+  el.addEventListener('dblclick',()=>{UI[key]=DEF[key];applyUI();sizeInner();renderWires();saveUI();});
+}
+applyUI();
+Z=Math.min(2,Math.max(0.2,UI.z||1));
+$('#zIn').addEventListener('click',()=>setZoom(ZSTEPS.find(v=>v>Z+0.005)||2));
+$('#zOut').addEventListener('click',()=>setZoom([...ZSTEPS].reverse().find(v=>v<Z-0.005)||0.2));
+$('#zPct').addEventListener('click',()=>setZoom(1));
+$('#zFit').addEventListener('click',fitZoom);
+mapEl.addEventListener('wheel',e=>{
+  if(!e.ctrlKey&&!e.metaKey)return;
+  e.preventDefault();
+  setZoom(Z*Math.exp(-Math.max(-60,Math.min(60,e.deltaY))*0.01),e.clientX,e.clientY);
+},{passive:false});
+splitter($('#splitL'),'lw',1,'x'); splitter($('#splitR'),'rw',-1,'x'); splitter($('#splitM'),'mh',1,'y');
+
+/* ---------- 起動 ---------- */
+render();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
+window.addEventListener('resize',()=>{sizeInner();renderWires();});
+(async()=>{
+  try{const u=window.claude&&window.claude.use; if(!u)return;
+    window.claude.use('downloads').then(d=>{downloads=d||null;},()=>{});
+    const s=await window.claude.use('sample'); if(s){sampleFn=s;renderSide();renderOrigin();}
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
