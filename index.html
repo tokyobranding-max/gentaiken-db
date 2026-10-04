@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>原体験DB(仮)</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -12,201 +12,251 @@ img{max-width:100%}
 [hidden]{display:none!important}
 </style>
 <style>
-/* 配置: 上に操作バー。左に地図（年齢順に左から右へ流れるカードと線）、その下に原点の線。右に「もしも」の比較と線の編集。
-   見た目は暗い地に生成りの点と線の一種類だけ（参考図に合わせた意図的な選択）。 */
+/* 配置: 上に名前・検索・表示の切り替え。左にメニュー、中央に地図と「未来の線」、右に「もしも」の比較。
+   見た目は、白い角丸の面と黄色の強調による明るい一種類だけ（参考画像に合わせた意図的な選択）。 */
 :root{
-  color-scheme:dark;
-  --bg:#0d0e12; --surface:#15171e; --raised:#1d2029; --rule:#2b2f3b;
-  --fg:#ece8dc; --muted:#a0a1ad; --faint:#6e707d;
-  --wire:#8f919e; --accent:#b3a4ff;
-  --age:#43c871; --exp:#5e9cf2; --emo:#ee6b6b; --val:#f2a23f;
-  --add:#7be0a4; --del:#ff8f8f; --chg:#ffd27a;
-  --display:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  color-scheme:light;
+  --bg:#f5f5f2; --panel:#ffffff; --soft:#f1f1ee; --soft2:#e6e6e1; --tint:#f7f7f4; --rule:#e8e8e3;
+  --fg:#17181c; --muted:#696a70; --faint:#a9aaae;
+  --ink:#24262c; --accent:#eef35f; --accent2:#e3e945; --future:#8a6cf0;
+  --wire:#2a2b30;
+  --age:#36c66a; --exp:#6a94ee; --emo:#ee6a6a; --val:#f3c22f;
+  --add:#1f9d57; --del:#d64545; --chg:#c88a00;
+  --shadow:0 1px 2px rgba(20,20,30,.04),0 8px 24px rgba(20,20,30,.05);
   --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
   --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.6}
 button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 h1,h2,h3,p,dl,dd,ul{margin:0;padding:0}
 ul{list-style:none}
+.ic{flex:none;display:block}
 
-.app{max-width:1720px;margin-inline:auto;padding-inline:clamp(16px,2.4vw,28px);padding-block:16px 44px;display:flex;flex-direction:column;gap:12px}
-.bar{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 18px}
-.bar h1{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.06em}
-.tagline{font-size:13px;color:var(--muted);min-width:0;flex:1 1 280px}
-.btn{border:1px solid var(--rule);background:var(--raised);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;line-height:1.4}
-.btn:hover{border-color:var(--faint)}
-.btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:700}
-.btn.sm{padding:4px 10px;font-size:12px}
-.btn.danger{color:var(--del);border-color:var(--rule);background:transparent}
+.app{max-width:1760px;margin-inline:auto;padding-inline:clamp(16px,2vw,28px);padding-block:18px 44px;display:flex;flex-direction:column;gap:14px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 18px;flex:1 1 360px;min-width:0}
+.bar h1{font-weight:900;font-size:28px;letter-spacing:.02em;line-height:1.25}
+.tagline{font-size:12.5px;color:var(--muted);min-width:0}
+.search{flex:1 1 220px;max-width:380px;display:flex;align-items:center;gap:10px;height:46px;padding:0 18px;background:var(--panel);border:1px solid var(--rule);border-radius:999px;box-shadow:var(--shadow)}
+.search:focus-within{border-color:var(--fg)}
+.search span{display:grid}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:0;font-size:13.5px;outline:none}
+.nav{display:flex;flex-wrap:wrap;gap:8px}
+.navb{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 18px;border:0;border-radius:999px;background:var(--soft);font-size:13.5px;font-weight:700;cursor:pointer}
+.navb:hover{background:var(--soft2)}
+.navb[aria-current="page"]{background:var(--accent)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--soft);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.4;color:var(--fg);text-align:left}
+.btn:hover{background:var(--soft2)}
+.btn.primary{background:var(--accent);font-weight:700}
+.btn.primary:hover{background:var(--accent2)}
+.btn.dark{background:var(--ink);color:#fff;font-weight:700}
+.btn.dark:hover{background:#000}
+.btn.line{background:var(--panel);box-shadow:inset 0 0 0 1px var(--rule)}
+.btn.line:hover{background:var(--tint)}
+.btn.sm{padding:5px 12px;font-size:12px;gap:6px}
+.btn.danger{background:transparent;color:var(--del);box-shadow:inset 0 0 0 1px var(--rule)}
 .btn:disabled{opacity:.5;cursor:default}
-.notice{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted);border-left:2px solid var(--accent);padding:2px 0 2px 10px}
-.notice b{color:var(--fg);font-weight:700}
-.modebar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px;background:var(--raised);border:1px solid var(--accent);border-radius:6px;padding:6px 12px}
+.badge{flex:none;background:var(--ink);color:#fff;border-radius:999px;padding:1px 10px;font-size:11.5px;font-weight:700}
+.notice{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted)}
+.modebar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;background:#fbfcd6;border:1px solid #dfe45c;border-radius:16px;padding:8px 16px}
 .modebar .k{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
 .modebar .k i{display:inline-block;width:18px;height:3px;border-radius:2px}
 
-.work{display:grid;grid-template-columns:var(--lw,224px) 14px minmax(0,1fr) 14px var(--rw,344px);align-items:start}
+.work{display:grid;grid-template-columns:var(--lw,236px) 14px minmax(0,1fr) 14px var(--rw,344px);align-items:start}
 .center{display:flex;flex-direction:column;min-width:0}
-.center .legend{margin-bottom:10px}
 .split{position:relative;touch-action:none;user-select:none;display:flex;justify-content:center}
 .split.x{align-self:stretch;cursor:col-resize}
 .split.y{height:16px;cursor:row-resize;align-items:center}
-.grip{display:block;border-radius:2px;background:var(--rule)}
+.grip{display:block;border-radius:2px;background:var(--soft2)}
 .split.x .grip{position:sticky;top:42vh;width:4px;height:44px}
 .split.y .grip{width:56px;height:4px}
-.split:hover .grip,.split.on .grip,.split:focus-visible .grip{background:var(--accent)}
-.mbtns{display:flex;flex-direction:column;gap:6px}
-.mbtns .btn{text-align:left}
-.clist{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
-.citem{display:flex;gap:8px;align-items:baseline;width:100%;border:0;background:transparent;text-align:left;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;min-width:0}
-.citem:hover{background:var(--raised)}
-.citem.on{background:rgba(236,232,220,.1)}
-.citem .ck{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--age);font-variant-numeric:tabular-nums}
+.split:hover .grip,.split.on .grip,.split:focus-visible .grip{background:var(--fg)}
+
+.panel{background:var(--panel);border-radius:22px;box-shadow:var(--shadow)}
+.side,.menu{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto;min-width:0}
+.sec{padding:18px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:10px}
+.sec:first-child{border-top:0}
+.sec-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.sec h2,.osec h2,.vpanel h2{font-size:15px;font-weight:900;letter-spacing:.02em;margin-right:auto}
+.hint{font-size:12px;color:var(--muted);line-height:1.6}
+.lab{font-size:11.5px;color:var(--muted);letter-spacing:.03em}
+
+.mbtns{display:flex;flex-direction:column;gap:8px}
+.mbtns .btn{padding:10px 16px;font-size:13.5px;font-weight:700;gap:12px}
+.clist{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
+.citem{display:flex;gap:9px;align-items:center;width:100%;border:0;background:transparent;text-align:left;padding:5px 6px;border-radius:10px;cursor:pointer;font-size:12.5px;min-width:0}
+.citem:hover{background:var(--tint)}
+.citem.on{background:var(--soft)}
+.cdot{flex:none;display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--faint)}
+.cdot.k-past{background:var(--age)} .cdot.k-now{background:var(--ink)} .cdot.k-if{background:#8d8e93} .cdot.k-future{background:var(--future)}
+.citem .ck{flex:none;font-variant-numeric:tabular-nums;font-weight:500}
 .citem .ct{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);align-items:center}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i.t{width:4px;height:12px;border-radius:2px;display:inline-block}
+.ver{display:flex;flex-wrap:wrap;gap:6px}
+.ver input{flex:1 1 120px;min-width:0;border-radius:999px;padding-inline:16px}
+.vers li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:12.5px;padding:8px 0;border-top:1px solid var(--rule)}
+.vers li span{flex:1 1 100%;min-width:0;font-weight:500}
+.vers small{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:6px;font-weight:400}
+
+.mappanel{padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;font-weight:500;align-items:center;padding:4px 6px 0}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i.t{width:14px;height:14px;border-radius:50%;display:inline-block}
 .legend svg{display:block}
-.legend .jump{margin-left:auto;gap:6px}
-.map{height:var(--mh,clamp(440px,68vh,740px));overflow:auto;border:1px solid var(--rule);border-radius:10px;background:var(--bg);position:relative}
+.maphint{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding-inline:6px}
+.maphint .hint{flex:1 1 320px;min-width:0;font-size:11.5px}
+.jump{display:flex;gap:8px}
 .mapbox{position:relative}
+.map{height:var(--mh,clamp(420px,62vh,720px));overflow:auto;border:1px solid var(--rule);border-radius:16px;background:#fafaf8;position:relative}
 .sizer{position:relative;overflow:hidden}
-.inner{position:absolute;left:0;top:0;transform-origin:0 0;cursor:grab;background-image:radial-gradient(var(--rule) 1px,transparent 1px);background-size:24px 24px}
+.inner{position:absolute;left:0;top:0;transform-origin:0 0;cursor:grab;background-image:radial-gradient(#e2e2dc 1px,transparent 1px);background-size:24px 24px}
 .inner.panning{cursor:grabbing}
-.zoomctl{position:absolute;left:12px;bottom:20px;z-index:5;display:flex;align-items:center;gap:2px;padding:3px;background:var(--raised);border:1px solid var(--rule);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
-.zoomctl button{height:32px;min-width:32px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;cursor:pointer;font-size:17px;line-height:1}
-.zoomctl button:hover{background:var(--rule)}
-.zoomctl #zPct{min-width:56px;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.zoomctl{position:absolute;left:14px;bottom:22px;z-index:5;display:flex;align-items:center;gap:2px;padding:5px 8px;background:var(--panel);border-radius:999px;box-shadow:0 4px 18px rgba(20,20,30,.14)}
+.zoomctl button{height:34px;min-width:34px;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;cursor:pointer;font-size:19px;line-height:1}
+.zoomctl button:hover{background:var(--soft)}
+.zoomctl #zPct{min-width:58px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.fab{position:absolute;right:18px;top:16px;z-index:5;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--ink);color:#fff;cursor:pointer;box-shadow:0 6px 16px rgba(20,20,30,.28)}
+.fab:hover{background:#000}
 #wires{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 .mapempty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 
-.card{position:absolute;z-index:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;width:204px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;font-size:12.5px;line-height:1.5}
-.card.k-now{border-color:var(--fg)}
-.card.k-if{border:1px dashed var(--accent)}
-.card.k-future{border-color:var(--accent)}
-.card.glow{box-shadow:0 0 0 2px var(--emo)}
-.card.dragging{z-index:4;cursor:grabbing;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.card{position:absolute;z-index:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;width:204px;padding:4px 0 6px;background:var(--panel);border:1px solid var(--rule);border-radius:14px;box-shadow:0 2px 10px rgba(20,20,30,.06);font-size:12.5px;line-height:1.5}
+.card.k-future{border-color:#c9bcf8}
+.card.glow{box-shadow:0 0 0 3px var(--emo)}
+.card.hit{box-shadow:0 0 0 3px #d9df2e,0 2px 10px rgba(20,20,30,.06)}
+.card.miss{opacity:.32}
+.card.dragging{z-index:4;cursor:grabbing;box-shadow:0 14px 34px rgba(20,20,30,.2)}
 .card.dragging .row{cursor:grabbing}
-.row{position:relative;padding:7px 12px 7px 20px;border-top:1px solid var(--rule);cursor:grab;min-height:32px}
-.row:first-child{border-top:0}
-.row::before{content:"";position:absolute;left:8px;top:7px;bottom:7px;width:4px;border-radius:2px;background:var(--faint)}
-.r-age::before{background:var(--age)} .r-exp::before{background:var(--exp)} .r-emo::before{background:var(--emo)} .r-val::before{background:var(--val)}
-.row.on{background:rgba(236,232,220,.09)}
-.row.src{background:rgba(179,164,255,.16)}
-.r-age{display:block;cursor:grab;touch-action:none}
+.row{position:relative;padding:5px 14px 5px 34px;cursor:grab;min-height:28px}
+.row::before{content:"";position:absolute;left:13px;top:9px;width:11px;height:11px;border-radius:50%;background:var(--faint)}
+.r-exp::before{background:var(--exp)} .r-emo::before{background:var(--emo)} .r-val::before{background:var(--val)}
+.r-age{padding:8px 8px 5px 28px;touch-action:none}
+.r-age::before{left:14px;top:10px;width:5px;height:16px;border-radius:3px;background:var(--age)}
+.k-now .r-age::before{background:var(--ink)}
+.k-if .r-age::before,.k-future .r-age::before{background:var(--future)}
 .r-age .cell{display:flex;align-items:center;gap:8px}
-.age{font-family:var(--mono);font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
-.edit{margin-left:auto;border:0;background:transparent;color:var(--muted);font-size:11.5px;cursor:pointer;padding:2px 4px;border-radius:4px}
-.edit:hover{color:var(--fg)}
-.chip{display:inline-block;font-size:11px;line-height:1.5;padding:0 7px;border-radius:999px;border:1px solid var(--rule);color:var(--muted)}
-.chip.origin{border-color:var(--fg);color:var(--fg)}
-.chip.st-confirmed{border-color:var(--fg);color:var(--fg)}
-.chip.st-candidate{border-style:dashed}
+.row.on{background:var(--soft)}
+.row.src{background:#efeaff}
+.age{font-weight:900;font-size:13.5px;font-variant-numeric:tabular-nums}
+.edit{margin-left:auto;width:28px;height:24px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;cursor:pointer}
+.edit:hover{background:var(--soft)}
+.chip{display:inline-block;font-size:11px;line-height:1.6;padding:0 9px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.chip.origin,.chip.st-confirmed{background:var(--ink);color:#fff;font-weight:700}
+.chip.st-candidate{background:transparent;box-shadow:inset 0 0 0 1px var(--faint)}
 .ph{color:var(--faint)}
 .tag{display:inline-block;margin-right:6px;color:var(--muted);font-size:11.5px}
-.tag.emo{color:var(--fg);cursor:pointer;border:0;background:transparent;padding:0;font-size:12.5px}
+.tag.emo{margin:0;color:var(--fg);cursor:pointer;border:0;background:transparent;padding:0;font-size:12.5px}
 .tag.emo:hover{text-decoration:underline}
-.tags{display:block;margin-top:2px}
-.str{display:inline-flex;gap:3px;vertical-align:middle;margin-left:2px}
-.str i{width:5px;height:5px;border-radius:50%;background:var(--rule)}
+.sep{color:var(--faint)}
+.tags{display:block;margin-top:1px}
+.str{display:inline-flex;gap:3px;vertical-align:middle;margin-left:7px;white-space:nowrap}
+.str i{width:5px;height:5px;border-radius:50%;background:var(--soft2)}
 .str i.f{background:var(--emo)}
-.warn{font-size:11px;color:var(--chg);padding:5px 12px 6px 20px;border-top:1px solid var(--rule)}
-.port{position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:var(--bg);border:1.5px solid var(--wire);cursor:crosshair;touch-action:none;z-index:2}
+.warn{font-size:11px;color:#8a6200;background:#fff6d6;margin:4px 10px 2px;padding:3px 9px;border-radius:8px}
+.port{position:absolute;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:#fff;border:1.5px solid #c6c7cc;cursor:crosshair;touch-action:none;z-index:2}
 .port::after{content:"";position:absolute;inset:-9px}
 .port.l{left:-6px} .port.r{right:-6px}
-.port:hover,.row.src .port{background:var(--fg);border-color:var(--fg)}
-.cand{position:absolute;z-index:1;width:220px;border:1.5px dashed var(--accent);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:5px;background:rgba(13,14,18,.82)}
-.cand-k{font-size:11px;letter-spacing:.08em;color:var(--accent)}
+.port:hover,.row.src .port{background:var(--ink);border-color:var(--ink)}
+.cand{position:absolute;z-index:1;width:220px;border:1.5px dashed #b3a0f7;border-radius:14px;padding:11px 13px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:5px;background:rgba(255,255,255,.88)}
+.cand-k{font-size:12px;font-weight:700}
 .cand-t{font-weight:500}
 .cand-u,.cand-m{font-size:11.5px;color:var(--muted)}
 .cand .btn{align-self:flex-start;margin-top:3px}
 
 .wire .vis{fill:none;stroke:var(--wire);stroke-linecap:round}
 .wire .hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer}
-.wire .halo{fill:none;stroke:var(--accent);opacity:.42;stroke-linecap:round}
+.wire .halo{fill:none;stroke:#e6ec3d;stroke-linecap:round}
 .wire .end{fill:var(--wire)}
-.wire.s-candidate .vis{stroke-dasharray:3 6;opacity:.8}
-.wire.s-removed .vis{stroke-dasharray:1 7;opacity:.34}
-.wire.dim .vis,.wire.dim .end{opacity:.2}
-.wire.hl .vis,.wire.sel .vis{stroke:var(--fg);opacity:1}
-.wire.hl .end,.wire.sel .end{fill:var(--fg)}
-.wire.d-add .vis{stroke:var(--add);opacity:1} .wire.d-del .vis{stroke:var(--del);opacity:1} .wire.d-chg .vis{stroke:var(--chg);opacity:1}
-.wire.fut .vis{stroke:var(--accent);stroke-dasharray:2 6}
-.wire.tmp .vis{stroke:var(--accent);stroke-dasharray:4 5}
+.wire.s-candidate .vis{stroke:#9a9ba1;stroke-dasharray:3 6}
+.wire.s-removed .vis{stroke:#b4b5ba;stroke-dasharray:1 7}
+.wire.dim .vis,.wire.dim .end{opacity:.13}
+.wire.hl .vis,.wire.sel .vis{stroke:#000}
+.wire.d-add .vis{stroke:var(--add)} .wire.d-del .vis{stroke:var(--del)} .wire.d-chg .vis{stroke:var(--chg)}
+.wire.fut .vis{stroke:var(--future);stroke-dasharray:2 6}
+.wire.tmp .vis{stroke:var(--future);stroke-dasharray:4 5}
 
-.panel{border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
-.side,.menu{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto;min-width:0}
-.sec{padding:14px 16px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:10px}
-.sec:first-child{border-top:0}
-.sec-h{display:flex;align-items:center;gap:8px}
-.sec h2,.osec h2{font-size:13px;font-weight:700;letter-spacing:.06em;margin-right:auto}
-.hint{font-size:12px;color:var(--muted);line-height:1.6}
-.cmp{display:flex;flex-direction:column;gap:5px;padding:9px 0;border-top:1px solid var(--rule)}
-.cmp:first-of-type{border-top:0;padding-top:0}
-.cmp-h{display:flex;align-items:baseline;gap:8px}
-.cmp-h .k{font-size:11px;color:var(--accent);flex:none}
-.cmp-h .k.now{color:var(--muted)}
-.cmp-h button{border:0;background:transparent;padding:0;text-align:left;font-weight:500;cursor:pointer;min-width:0;flex:1}
+.cmp{display:flex;flex-direction:column;gap:7px;padding:14px;background:var(--tint);border-radius:16px}
+.cmp .k{font-size:11px;color:var(--muted);margin-bottom:-4px}
+.cmp-h{display:flex;align-items:flex-start;gap:10px}
+.cmp-h button{flex:1;min-width:0;border:0;background:transparent;padding:0;text-align:left;font-size:14px;font-weight:700;line-height:1.45;cursor:pointer}
 .cmp-h button:hover{text-decoration:underline}
-.len{flex:none;font-size:11.5px;border:1px solid var(--rule);border-radius:999px;padding:0 8px}
-.len.long{border-color:var(--fg)}
-.len.none{border-style:dashed;color:var(--chg)}
-.meter{height:6px;background:var(--raised);border-radius:3px;overflow:hidden}
-.meter i{display:block;height:100%;background:var(--val);border-radius:3px}
-.cmp-n{display:flex;gap:14px;font-size:12px;color:var(--muted)}
-.cmp-n b{font-family:var(--mono);font-weight:500;color:var(--fg);font-variant-numeric:tabular-nums}
+.len{flex:none;background:var(--ink);color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700}
+.len.none{color:var(--accent)}
+.cmp-n{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;color:var(--muted)}
+.cmp-n b{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
+.cmp-n .sum{font-size:11.5px}
+.rd{display:inline-flex;gap:4px}
+.rd i{width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1.5px #d4d4ce}
+.rd i.f{background:#f1e63c;box-shadow:inset 0 0 0 1.5px #d6ca1c}
 .unmet{font-size:12px;color:var(--muted)}
-.lp-t{font-weight:500}
+.lp-t{font-weight:700}
 .arrow{color:var(--muted)}
 .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
-.field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.lab{font-size:11.5px;color:var(--muted);letter-spacing:.03em}
-textarea,input[type=text],input[type=number],select{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;width:100%;font-size:13px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+textarea,input[type=text],input[type=number],select{background:var(--soft);border:1px solid transparent;border-radius:12px;padding:8px 12px;width:100%;font-size:13px}
+textarea:focus,input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--fg);outline:none}
 textarea{resize:vertical;line-height:1.55}
-.seg{display:flex;gap:4px}
-.segb{flex:1;border:1px solid var(--rule);background:var(--bg);border-radius:6px;padding:4px 0;cursor:pointer;font-family:var(--mono);font-size:13px}
-.segb.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg{display:flex;gap:5px}
+.segb{flex:1;border:0;background:var(--soft);border-radius:999px;padding:5px 0;cursor:pointer;font-size:13px;font-weight:700}
+.segb:hover{background:var(--soft2)}
+.segb.on{background:var(--ink);color:#fff}
 .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.effect{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:9px;display:flex;flex-direction:column;gap:3px}
-.effect b{color:var(--fg);font-weight:500}
-.poss li{font-size:12.5px;padding:5px 0;border-top:1px solid var(--rule)}
-.poss li:first-child{border-top:0;padding-top:0}
-.poss small{display:block;color:var(--muted);font-size:11.5px}
-.ver{display:flex;flex-wrap:wrap;gap:6px}
-.ver input{flex:1 1 120px;min-width:0}
-.vers li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12.5px;padding:6px 0;border-top:1px solid var(--rule)}
-.vers li span{margin-right:auto;min-width:0}
-.vers small{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:6px}
+.effect{font-size:12px;color:var(--muted);background:var(--tint);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.effect b{color:var(--fg);font-weight:700}
+.poss{display:flex;flex-direction:column;gap:6px}
+.poss li{font-size:12.5px;font-weight:500;padding:9px 12px;background:var(--tint);border-radius:12px}
+.poss small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
 
-.osec{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.obody{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start}
+.osec{padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.obody{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-start}
 .ochart{flex:3 1 420px;min-width:0;overflow-x:auto}
 .ochart svg{display:block;width:100%;min-width:460px;max-width:720px;height:auto}
-.omat{flex:2 1 240px;min-width:0;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.omat{flex:2 1 260px;min-width:0;display:flex;flex-direction:column;gap:9px;font-size:13px}
 .omat dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
 .omat dt{color:var(--muted);font-size:12px}
-.flist{display:flex;flex-direction:column}
-.flist li{display:flex;gap:9px;align-items:baseline;padding:5px 0;border-top:1px solid var(--rule)}
-.flist li:first-child{border-top:0}
-.flist li::before{content:"";flex:none;align-self:center;width:7px;height:7px;border-radius:50%;border:1.5px dashed var(--accent)}
+.flist{display:flex;flex-direction:column;gap:6px;counter-reset:f}
+.flist li{display:flex;gap:10px;align-items:center;padding:6px 6px 6px 7px;background:var(--tint);border-radius:11px;counter-increment:f}
+.flist li::before{content:counter(f);flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:var(--soft2);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .flist li span{flex:1;min-width:0;font-weight:500}
-.fx{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0 6px;font-size:15px;line-height:1;border-radius:4px}
-.fx:hover{color:var(--fg)}
+.fx{flex:none;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.fx:hover{background:var(--soft2);color:var(--fg)}
 .odot{cursor:pointer}
 .empty{color:var(--muted);font-size:13px}
 
-dialog{background:var(--surface);color:var(--fg);border:1px solid var(--rule);border-radius:10px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
-dialog::backdrop{background:rgba(5,6,9,.72)}
-.dlg{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.dlg h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.04em}
+.vpanel{padding:22px;display:flex;flex-direction:column;gap:16px}
+.tablewrap{overflow-x:auto}
+table.list{border-collapse:collapse;width:100%;min-width:660px;font-size:13px}
+.list th{font-size:11.5px;font-weight:500;color:var(--muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.list td{padding:11px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+.list tbody tr{cursor:pointer}
+.list tbody tr:hover{background:var(--tint)}
+.list .kc{white-space:nowrap;font-weight:700}
+.list .kc .cdot{margin-right:8px;vertical-align:-1px}
+.list .num{font-variant-numeric:tabular-nums;text-align:right}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;gap:2px;padding:14px 16px;background:var(--tint);border-radius:16px}
+.tile b{font-size:28px;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.vpanel h3{font-size:13.5px;font-weight:700}
+.statbox,.set{display:flex;flex-direction:column;gap:9px}
+.set{padding:16px;background:var(--tint);border-radius:16px}
+.bars{max-width:760px;display:grid;grid-template-columns:minmax(72px,max-content) minmax(0,1fr) auto;gap:8px 12px;align-items:center;font-size:13px}
+.bars .bl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.bars .bt i{display:block;height:12px;min-width:2px;border-radius:0 4px 4px 0}
+.bars b{font-weight:700;font-variant-numeric:tabular-nums}
+
+dialog{background:var(--panel);color:var(--fg);border:0;border-radius:22px;padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 32px);box-shadow:0 24px 60px rgba(20,20,30,.25)}
+dialog::backdrop{background:rgba(20,20,30,.36)}
+.dlg{padding:22px 24px;display:flex;flex-direction:column;gap:13px}
+.dlg h2{font-size:18px;font-weight:900}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.pick{border:1px solid var(--rule);background:var(--bg);border-radius:999px;padding:2px 11px;font-size:12.5px;cursor:pointer}
-.pick.on{background:var(--emo);border-color:var(--emo);color:var(--bg);font-weight:700}
-.pick.ai{border-color:var(--accent)}
+.pick{border:0;background:var(--soft);border-radius:999px;padding:4px 13px;font-size:12.5px;cursor:pointer}
+.pick:hover{background:var(--soft2)}
+.pick.on{background:var(--ink);color:#fff;font-weight:700}
+.pick.ai{background:#efeaff}
 .check{display:flex;gap:8px;align-items:center;font-size:13px}
 .links{display:flex;flex-direction:column;gap:6px}
 .links label{display:flex;gap:10px;align-items:center;font-size:12.5px}
@@ -216,15 +266,24 @@ dialog::backdrop{background:rgba(5,6,9,.72)}
 .dlg-acts .sp{flex:1}
 hr{border:0;border-top:1px solid var(--rule);margin:2px 0;width:100%}
 
-@media (max-width:1020px){.work{display:flex;flex-direction:column;gap:14px;align-items:stretch}.split.x{display:none}.side,.menu{position:static;max-height:none}.map{height:var(--mh,440px)}.mbtns{flex-direction:row;flex-wrap:wrap}}
-@media (prefers-reduced-motion:no-preference){.btn,.segb,.pick{transition:border-color .12s,background .12s}}
+@media (max-width:1020px){.work{display:flex;flex-direction:column;gap:14px;align-items:stretch}.split.x{display:none}.side,.menu{position:static;max-height:none}.map{height:var(--mh,440px)}.mbtns{flex-direction:row;flex-wrap:wrap}.bar h1{font-size:24px}.navb{height:42px;padding:0 14px}.search{max-width:none}}
+@media (prefers-reduced-motion:no-preference){.btn,.navb,.segb,.pick,.citem{transition:background .12s}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="bar">
-    <h1>原体験DB(仮)</h1>
-    <p class="tagline">自分の体験や感情、価値観をアーカイブして、迷った時、感じた時に立ち戻る場所</p>
+    <div class="brand">
+      <h1>原体験DB(仮)</h1>
+      <p class="tagline">自分の体験や感情、価値観をアーカイブして、迷った時、感じた時に立ち戻る場所</p>
+    </div>
+    <label class="search"><span data-ic="search"></span><input type="search" id="q" placeholder="原体験を探す（体験・感情・価値観）" aria-label="カードを探す"></label>
+    <nav class="nav" aria-label="表示の切り替え">
+      <button class="navb" type="button" data-view="map" data-ic="map">マップ</button>
+      <button class="navb" type="button" data-view="list" data-ic="list">リスト</button>
+      <button class="navb" type="button" data-view="stats" data-ic="chart">統計</button>
+      <button class="navb" type="button" data-view="settings" data-ic="gear">設定</button>
+    </nav>
   </header>
   <div class="notice" id="notice"></div>
   <div class="modebar" id="modeBar" role="status" hidden></div>
@@ -233,10 +292,10 @@ hr{border:0;border-top:1px solid var(--rule);margin:2px 0;width:100%}
     <nav class="panel menu" id="menu" aria-label="メニュー">
       <section class="sec"><h2>メニュー</h2>
         <div class="mbtns">
-          <button class="btn primary" id="addBtn" type="button">＋ カードを追加</button>
-          <button class="btn" type="button" data-act="add-if">＋ もしもを足す</button>
-          <button class="btn" id="layoutBtn" type="button">年齢順に並べ直す</button>
-          <button class="btn" id="ioBtn" type="button">書き出す・読み込む</button>
+          <button class="btn primary" id="addBtn" type="button" data-ic="plus">カードを追加</button>
+          <button class="btn" type="button" data-act="add-if" data-ic="branch">もしもを足す</button>
+          <button class="btn" id="layoutBtn" type="button" data-ic="sort">年齢順に並べ直す</button>
+          <button class="btn" id="ioBtn" type="button" data-ic="file">書き出す・読み込む</button>
         </div>
       </section>
       <section class="sec"><h2>カード</h2><div id="cardList"></div></section>
@@ -244,38 +303,46 @@ hr{border:0;border-top:1px solid var(--rule);margin:2px 0;width:100%}
     </nav>
     <div class="split x" id="splitL" role="separator" aria-orientation="vertical" aria-label="メニューの幅を変える" tabindex="0"><span class="grip"></span></div>
     <div class="center">
-      <div class="legend" aria-label="凡例">
-        <span><i class="t" style="background:var(--age)"></i>年齢</span>
-        <span><i class="t" style="background:var(--exp)"></i>体験</span>
-        <span><i class="t" style="background:var(--emo)"></i>感情</span>
-        <span><i class="t" style="background:var(--val)"></i>価値観</span>
-        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#8f919e" stroke-width="3" stroke-linecap="round" fill="none"/></svg>確定（太いほど強い）</span>
-        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#8f919e" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round" fill="none"/></svg>候補</span>
-        <span><svg width="26" height="8" aria-hidden="true"><path d="M1 4H25" stroke="#b3a4ff" stroke-width="1.5" stroke-dasharray="2 5" stroke-linecap="round" fill="none"/></svg>未来</span>
-        <span>行の端の丸を引っぱるか、丸を押してから相手の行を押すと、線がつながります。何もないところを引っぱると地図が動き、Ctrl（⌘）＋ホイールで拡大・縮小します</span>
-        <span class="jump"><button class="btn sm" type="button" data-jump="past">過去へ</button><button class="btn sm" type="button" data-jump="now">いま・もしもへ →</button></span>
-      </div>
-      <div class="mapbox">
-        <div class="map" id="map">
-          <div class="sizer" id="sizer">
-            <div class="inner" id="inner">
-              <svg id="wires" aria-hidden="true"></svg>
-              <div id="cards"></div>
+      <div id="viewMap">
+        <section class="panel mappanel" aria-label="マップ">
+          <div class="legend" aria-label="凡例">
+            <span><i class="t" style="background:var(--age)"></i>年齢</span>
+            <span><i class="t" style="background:var(--exp)"></i>体験</span>
+            <span><i class="t" style="background:var(--emo)"></i>感情</span>
+            <span><i class="t" style="background:var(--val)"></i>価値観</span>
+            <span><svg width="40" height="8" aria-hidden="true"><path d="M2 4H38" stroke="#2a2b30" stroke-width="3" stroke-linecap="round" fill="none"/></svg>確定（太いほど強い）</span>
+            <span><svg width="40" height="8" aria-hidden="true"><path d="M2 4H38" stroke="#9a9ba1" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round" fill="none"/></svg>候補</span>
+            <span><svg width="40" height="8" aria-hidden="true"><path d="M2 4H38" stroke="#8a6cf0" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round" fill="none"/></svg>未来</span>
+          </div>
+          <div class="maphint">
+            <p class="hint">行の端の丸を引っぱるか、丸を押してから相手の行を押すと、線がつながります。何もないところを引っぱると地図が動きます。Ctrl（⌘）＋ホイールで拡大・縮小します。</p>
+            <span class="jump"><button class="btn line sm" type="button" data-jump="past" data-ic="left">過去へ</button><button class="btn line sm" type="button" data-jump="now" data-ic="right">いま・もしもへ</button></span>
+          </div>
+          <div class="mapbox">
+            <div class="map" id="map">
+              <div class="sizer" id="sizer">
+                <div class="inner" id="inner">
+                  <svg id="wires" aria-hidden="true"></svg>
+                  <div id="cards"></div>
+                </div>
+              </div>
+            </div>
+            <button class="fab" id="addFab" type="button" aria-label="カードを追加" title="カードを追加" data-ic="plus"></button>
+            <div class="zoomctl" role="group" aria-label="地図の拡大と縮小">
+              <button type="button" id="zFit" aria-label="全体を表示" title="全体を表示" data-ic="fit"></button>
+              <button type="button" id="zOut" aria-label="縮小" title="縮小">−</button>
+              <button type="button" id="zPct" aria-label="100%に戻す" title="100%に戻す">100%</button>
+              <button type="button" id="zIn" aria-label="拡大" title="拡大">＋</button>
             </div>
           </div>
-        </div>
-        <div class="zoomctl" role="group" aria-label="地図の拡大と縮小">
-          <button type="button" id="zFit" aria-label="全体を表示" title="全体を表示"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M2 14h16M6 2v16M14 2v16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-          <button type="button" id="zOut" aria-label="縮小" title="縮小">−</button>
-          <button type="button" id="zPct" aria-label="100%に戻す" title="100%に戻す">100%</button>
-          <button type="button" id="zIn" aria-label="拡大" title="拡大">＋</button>
-        </div>
+        </section>
+        <div class="split y" id="splitM" role="separator" aria-orientation="horizontal" aria-label="地図の高さを変える" tabindex="0"><span class="grip"></span></div>
+        <section class="panel osec" aria-labelledby="originT">
+          <h2 id="originT">未来の線：原点から延ばす</h2>
+          <div class="obody" id="originBody"></div>
+        </section>
       </div>
-      <div class="split y" id="splitM" role="separator" aria-orientation="horizontal" aria-label="地図の高さを変える" tabindex="0"><span class="grip"></span></div>
-      <section class="panel osec" aria-labelledby="originT">
-        <h2 id="originT">未来の線：原点から延ばす</h2>
-        <div class="obody" id="originBody"></div>
-      </section>
+      <section class="panel vpanel" id="viewOther" hidden></section>
     </div>
     <div class="split x" id="splitR" role="separator" aria-orientation="vertical" aria-label="比較の欄の幅を変える" tabindex="0"><span class="grip"></span></div>
     <aside class="panel side" id="side" aria-label="比較と編集"></aside>
@@ -322,11 +389,29 @@ const KEY='gentaiken-db-v1', W=204, STEP=252, GAP=72, TOP=56;
 const ROWNAME={age:'年齢',exp:'体験',emo:'感情',val:'価値観'};
 const KINDNAME={past:'過去',now:'いま',if:'もしも',future:'未来'};
 const EMOS=['うれしい','夢中','誇らしい','安心','さびしい','くやしい','こわい','むなしい','怒り','恥ずかしい'];
-const SW=[0,1,1.6,2.4,3.3,4.4];
+const SW=[0,1,1.4,2,2.7,3.5];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,10);
 const clone=o=>JSON.parse(JSON.stringify(o));
+const ICON={
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  branch:'<path d="M5 7h3.5c4 0 3 10 7 10H19M5 17h3.5c1.4 0 2.2-1.2 2.9-2.8M19 7h-3.5c-.9 0-1.5.5-2 1.2M17 5l2 2-2 2M17 15l2 2-2 2"/>',
+  sort:'<path d="M7 5v14m0 0-3-3m3 3 3-3M17 19V5m0 0-3 3m3-3 3 3"/>',
+  file:'<path d="M7 3h7l5 5v13H7zM14 3v5h5"/>',
+  map:'<circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/><path d="M8.3 6h7.4M7 8l3.9 8M17 8l-3.9 8"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="2.8"/>',
+  chart:'<path d="M3 20h18M6 20v-8M12 20V5M18 20v-6"/>',
+  gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+  search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.6-4.6"/>',
+  left:'<path d="M19 12H5m0 0 5-5m-5 5 5 5"/>',
+  right:'<path d="M5 12h14m0 0-5-5m5 5-5 5"/>',
+  spark:'<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM19 16v4M17 18h4"/>',
+  dots:'<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  fit:'<path d="M3 8h18M3 16h18M8 3v18M16 3v18"/>'
+};
+const ic=(n,z)=>'<svg class="ic" viewBox="0 0 24 24" width="'+(z||18)+'" height="'+(z||18)+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[n]+'</svg>';
 
 /* ---------- データ ---------- */
 function sampleState(){
@@ -374,6 +459,7 @@ function seedFutures(){
 seedFutures();
 let futSug=[], futMsg='';
 let sel=null, mode=null, compareId=null, tagHl=null, drag=null, suppressUntil=0, clearAsk=false;
+let view='map', q='';
 let Z=1, CW=0, CH=0; /* 地図の倍率と、中身の大きさ */
 let sampleFn=null, downloads=null;
 
@@ -471,9 +557,13 @@ function saveVersion(name){
 
 /* ---------- 地図 ---------- */
 const mapEl=$('#map'), sizer=$('#sizer'), inner=$('#inner'), cardsEl=$('#cards'), wires=$('#wires'), side=$('#side');
+function matchQ(c){
+  const t=q.trim().toLowerCase(); if(!t)return null;
+  return [cardLabel(c),c.exp,c.value,...c.factTags,...c.emoTags].join(' ').toLowerCase().includes(t);
+}
 function tagsHtml(tags,kind){
   if(!tags.length)return '';
-  if(kind==='emo')return tags.map(t=>'<button type="button" class="tag emo" data-tag="'+esc(t)+'">#'+esc(t)+'</button>').join('');
+  if(kind==='emo')return tags.map(t=>'<button type="button" class="tag emo" data-tag="'+esc(t)+'">'+esc(t)+'</button>').join('<span class="sep">・</span>');
   return '<span class="tags">'+tags.map(t=>'<span class="tag">#'+esc(t)+'</span>').join('')+'</span>';
 }
 function dots(n){let h='<span class="str" role="img" aria-label="強さ'+n+'">';for(let i=1;i<=5;i++)h+='<i'+(i<=n?' class="f"':'')+'></i>';return h+'</span>';}
@@ -489,9 +579,9 @@ function renderCards(){
     const r=(c.kind==='now'||c.kind==='if')?rootOf(c.id):null;
     const rootless=!!r&&r.total>0&&r.root===0;
     const ph={past:'起きたこと',now:'いまやっていること',if:'もしも、こうしたら',future:'実現したい姿'}[c.kind];
-    const glow=tagHl&&c.emoTags.includes(tagHl);
-    h+='<article class="card k-'+c.kind+(glow?' glow':'')+'" data-id="'+c.id+'">'+
-      rowHtml(c,'age','<span class="age">'+esc(cardLabel(c))+'</span>'+(c.origin||(getOrigin()===c)?'<span class="chip origin">原点</span>':'')+'<button class="edit" type="button" aria-label="'+esc(cardLabel(c))+'のカードを編集">編集</button>')+
+    const glow=tagHl&&c.emoTags.includes(tagHl), mq=matchQ(c);
+    h+='<article class="card k-'+c.kind+(glow?' glow':'')+(mq===true?' hit':mq===false?' miss':'')+'" data-id="'+c.id+'">'+
+      rowHtml(c,'age','<span class="age">'+esc(cardLabel(c))+'</span>'+(c.origin||(getOrigin()===c)?'<span class="chip origin">原点</span>':'')+'<button class="edit" type="button" aria-label="'+esc(cardLabel(c))+'のカードを編集" title="編集">'+ic('dots')+'</button>')+
       rowHtml(c,'exp',c.exp.trim()?esc(c.exp)+tagsHtml(c.factTags,'fact'):'<span class="ph">'+ph+'</span>')+
       rowHtml(c,'emo',c.emoTags.length?tagsHtml(c.emoTags,'emo')+dots(c.emoStrength):'<span class="ph">感情タグ</span>')+
       rowHtml(c,'val',c.value.trim()?esc(c.value):'<span class="ph">'+(c.kind==='past'?'まだ言葉になっていない':'価値観')+'</span>')+
@@ -503,7 +593,7 @@ function renderCards(){
       '<p class="cand-k">未来の候補</p><p class="cand-t">'+esc(f.text)+'</p>'+
       (f.unmet.length?'<p class="cand-u">満たされない価値観：'+f.unmet.map(v=>'「'+esc(v)+'」').join('')+'</p>':'')+
       '<p class="cand-m">根の強さ '+f.r.root+' ／ 続く長さの目安：'+f.len.label+'</p>'+
-      '<button class="btn sm cand-ok" type="button">確定して未来カードにする</button></article>';
+      '<button class="btn sm line cand-ok" type="button">確定して未来カードにする</button></article>';
   }
   if(!S.cards.length)h='<div class="mapempty"><p>まだカードがありません。<br>「カードを追加」から、最初の原体験を入れてください。</p></div>';
   cardsEl.innerHTML=h;
@@ -637,18 +727,20 @@ function linePanel(l){
 function renderSide(){
   const targets=[...S.cards.filter(c=>c.kind==='now'),...S.cards.filter(c=>c.kind==='if')];
   const rs=targets.map(c=>({c,r:rootOf(c.id)})), max=Math.max(12,...rs.map(x=>x.r.root));
-  let h='<section class="sec"><div class="sec-h"><h2>もしもの比較</h2><button class="btn sm" type="button" data-act="add-if">＋ もしもを足す</button></div>';
+  let h='<section class="sec"><div class="sec-h"><h2>もしもの比較</h2><button class="btn sm line" type="button" data-act="add-if">'+ic('plus',14)+'もしもを足す</button></div>';
   if(!rs.length)h+='<p class="hint">「いま」や「もしも」のカードを足すと、どれが自分の原体験に根ざしているかを比べられます。</p>';
   else if(!rs[0].r.total)h+='<p class="hint">過去のカードに価値観を書くと、比べられるようになります。</p>';
   for(const {c,r} of rs){
     const len=lengthOf(r), cand=futureCandidate(c);
-    h+='<div class="cmp"><div class="cmp-h"><span class="k'+(c.kind==='now'?' now':'')+'">'+KINDNAME[c.kind]+'</span><button type="button" data-act="sel-card" data-id="'+c.id+'">'+esc(shortExp(c,22))+'</button><span class="len '+len.cls+'">'+len.label+'</span></div>'+
-      '<div class="meter" role="img" aria-label="根の強さ '+r.root+'"><i style="width:'+Math.round(r.root/max*100)+'%"></i></div>'+
-      '<div class="cmp-n"><span>根の強さ <b>'+r.root+'</b></span><span>届いている価値観 <b>'+r.reached.length+' / '+r.total+'</b></span></div>'+
+    let rd='<span class="rd" role="img" aria-label="届いている価値観 '+r.reached.length+' / '+r.total+'">';
+    for(let i=0;i<r.total;i++)rd+='<i'+(i<r.reached.length?' class="f"':'')+'></i>';
+    rd+='</span>';
+    h+='<div class="cmp"><span class="k">'+KINDNAME[c.kind]+'</span><div class="cmp-h"><button type="button" data-act="sel-card" data-id="'+c.id+'">'+esc(shortExp(c,28))+'</button><span class="len '+len.cls+'">'+len.label+'</span></div>'+
+      '<div class="cmp-n"><span>根の強さ</span>'+rd+'<b>'+r.reached.length+' / '+r.total+'</b><span class="sum">線の強さの合計 '+r.root+'</span></div>'+
       '<p class="unmet">満たされていない価値観：'+(r.unmet.length?r.unmet.map(id=>'「'+esc(card(id).value)+'」').join(''):'なし')+'</p>'+
-      (sampleFn&&cand?'<div class="acts"><button class="btn sm" type="button" data-act="ai-future" data-id="'+c.id+'">AIで未来の候補を文にする</button></div>':'')+'</div>';
+      (sampleFn&&cand?'<div class="acts"><button class="btn sm line" type="button" data-act="ai-future" data-id="'+c.id+'">'+ic('spark',14)+'AIで未来の候補を文にする</button></div>':'')+'</div>';
   }
-  if(rs.length)h+='<p class="hint">目安は、あなたが引いた線をもとにした仮説です。判定や予測ではありません。届いている価値観が半分以上なら「長い」とする、仮の基準です。</p><p class="hint" id="aiMsg" role="status"></p>';
+  if(rs.length)h+='<p class="hint">丸は、届いている価値観の数です。目安は、あなたが引いた線をもとにした仮説で、判定や予測ではありません。届いている価値観が半分以上なら「長い」とする、仮の基準です。</p><p class="hint" id="aiMsg" role="status"></p>';
   h+='</section>';
 
   h+='<section class="sec"><div class="sec-h"><h2>'+(sel&&sel.type==='row'?'選んだ行':'選んだ線')+'</h2></div>';
@@ -674,11 +766,11 @@ function renderSide(){
 function renderMenu(){
   let h='';
   for(const [k,name] of [['past','過去'],['now','いま'],['if','もしも'],['future','未来']]){
-    let cs=S.cards.filter(c=>c.kind===k); if(!cs.length)continue;
+    let cs=S.cards.filter(c=>c.kind===k&&matchQ(c)!==false); if(!cs.length)continue;
     if(k==='past')cs=cs.slice().sort((a,b)=>(a.age??0)-(b.age??0));
-    h+='<p class="lab">'+name+'</p><ul class="clist">'+cs.map(c=>'<li><button type="button" class="citem'+(sel&&sel.type==='row'&&sel.card===c.id?' on':'')+'" data-act="sel-card" data-id="'+c.id+'" title="'+esc(c.exp)+'">'+(k==='past'?'<span class="ck">'+esc((c.age??'？')+'歳')+'</span>':'')+'<span class="ct">'+esc((c.exp||'').trim()||'（未記入）')+'</span></button></li>').join('')+'</ul>';
+    h+='<p class="lab">'+name+'</p><ul class="clist">'+cs.map(c=>'<li><button type="button" class="citem'+(sel&&sel.type==='row'&&sel.card===c.id?' on':'')+'" data-act="sel-card" data-id="'+c.id+'" title="'+esc(c.exp)+'"><span class="cdot k-'+k+'"></span>'+(k==='past'?'<span class="ck">'+esc((c.age??'？')+'歳')+'</span>':k==='now'?'<span class="ck">いま</span>':'')+'<span class="ct">'+esc((c.exp||'').trim()||'（未記入）')+'</span></button></li>').join('')+'</ul>';
   }
-  $('#cardList').innerHTML=h||'<p class="hint">まだカードがありません。</p>';
+  $('#cardList').innerHTML=h||'<p class="hint">'+(S.cards.length?'合うカードがありません。':'まだカードがありません。')+'</p>';
   let v='<div class="ver"><input type="text" id="verName" placeholder="版の名前" aria-label="版の名前"><button class="btn sm" type="button" data-act="ver-save">いまの地図を保存</button></div>';
   v+=S.versions.length?'<ul class="vers">'+S.versions.map(x=>'<li><span>'+esc(x.name)+'<small>'+esc(new Date(x.savedAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))+'</small></span>'+
       '<button class="btn sm" type="button" data-act="ver-cmp" data-id="'+x.id+'">'+(compareId===x.id?'比較をやめる':'いまと比べる')+'</button><button class="btn sm" type="button" data-act="ver-restore" data-id="'+x.id+'">この版に戻す</button></li>').join('')+'</ul>'
@@ -696,30 +788,30 @@ function renderOrigin(){
   let g='';
   for(const c of S.cards.filter(c=>c.kind==='past'&&c.age!=null&&c!==o)){
     const x=X(c.age),y=Y(c.emoStrength);
-    g+='<g class="odot" data-id="'+c.id+'" tabindex="0" role="button" aria-label="'+c.age+'歳のカードを原点にする"><circle cx="'+x+'" cy="'+y+'" r="14" fill="transparent"/><circle cx="'+x+'" cy="'+y+'" r="5" fill="#8f919e"/><text x="'+(x+9)+'" y="'+(y-9)+'" font-size="12" fill="#a0a1ad">'+c.age+'歳</text></g>';
+    g+='<g class="odot" data-id="'+c.id+'" tabindex="0" role="button" aria-label="'+c.age+'歳のカードを原点にする"><circle cx="'+x+'" cy="'+y+'" r="14" fill="transparent"/><circle cx="'+x+'" cy="'+y+'" r="5" fill="#c3c4c9"/><text x="'+(x+9)+'" y="'+(y-9)+'" font-size="12" fill="#85868c">'+c.age+'歳</text></g>';
   }
   const up=fy<=my;
   el.innerHTML='<div class="ochart"><svg viewBox="0 0 690 270" role="img" aria-label="原点（'+o.age+'歳）からいま（'+now.age+'歳）への線を、同じ年数だけ未来（'+fAge+'歳）へ延ばした図">'+
-    '<defs><marker id="oa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b3a4ff"/></marker><marker id="ob" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6e707d"/></marker></defs>'+
-    '<text x="156" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">過去</text><text x="320" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">現在</text><text x="484" y="22" text-anchor="middle" font-size="13" fill="#a0a1ad">未来</text>'+
-    '<line x1="320" y1="34" x2="320" y2="226" stroke="#2b2f3b" stroke-width="1.5"/>'+
-    '<path d="M'+fx+' '+(fy+13)+'C'+fx+' 252,'+(ox+70)+' 250,'+(ox+8)+' '+(oy+12)+'" fill="none" stroke="#6e707d" stroke-width="1.25" stroke-dasharray="2 5" marker-end="url(#ob)"/>'+
-    '<text x="320" y="264" text-anchor="middle" font-size="12" fill="#a0a1ad">未来の可能性は、原点の体験から生まれる</text>'+
+    '<defs><marker id="oa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8a6cf0"/></marker><marker id="ob" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b4b5ba"/></marker></defs>'+
+    '<text x="156" y="22" text-anchor="middle" font-size="13" fill="#85868c">過去</text><text x="320" y="22" text-anchor="middle" font-size="13" fill="#85868c">現在</text><text x="484" y="22" text-anchor="middle" font-size="13" fill="#85868c">未来</text>'+
+    '<line x1="320" y1="34" x2="320" y2="226" stroke="#e3e3de" stroke-width="1.5"/>'+
+    '<path d="M'+fx+' '+(fy+13)+'C'+fx+' 252,'+(ox+70)+' 250,'+(ox+8)+' '+(oy+12)+'" fill="none" stroke="#b4b5ba" stroke-width="1.25" stroke-dasharray="2 5" marker-end="url(#ob)"/>'+
+    '<text x="320" y="264" text-anchor="middle" font-size="12" fill="#85868c">未来の可能性は、原点の体験から生まれる</text>'+
     g+
-    '<line x1="'+ox+'" y1="'+oy+'" x2="'+cx+'" y2="'+my+'" stroke="#ece8dc" stroke-width="2"/>'+
-    '<line x1="'+cx+'" y1="'+my+'" x2="'+(fx-(fx-cx)*0.045)+'" y2="'+(fy-(fy-my)*0.045)+'" stroke="#b3a4ff" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" marker-end="url(#oa)"/>'+
-    '<circle cx="'+ox+'" cy="'+oy+'" r="7.5" fill="#ece8dc"/><text x="'+(ox-6)+'" y="'+(oy-14)+'" font-size="13" font-weight="700" fill="#ece8dc">原点 '+o.age+'歳</text>'+
-    '<circle cx="'+cx+'" cy="'+my+'" r="7.5" fill="#ece8dc"/><text x="'+(cx+12)+'" y="'+(my+(up?24:-14))+'" font-size="13" font-weight="700" fill="#ece8dc">いま '+now.age+'歳</text>'+
-    '<circle cx="'+fx+'" cy="'+fy+'" r="8" fill="rgba(179,164,255,.14)" stroke="#b3a4ff" stroke-width="2" stroke-dasharray="2 3"/>'+
-    '<text x="'+(fx+15)+'" y="'+(fy-1)+'" font-size="13" font-weight="700" fill="#ece8dc">未来の点 '+fAge+'歳</text><text x="'+(fx+15)+'" y="'+(fy+15)+'" font-size="12" fill="#a0a1ad">いまから'+span+'年先</text>'+
+    '<line x1="'+ox+'" y1="'+oy+'" x2="'+cx+'" y2="'+my+'" stroke="#17181c" stroke-width="2"/>'+
+    '<line x1="'+cx+'" y1="'+my+'" x2="'+(fx-(fx-cx)*0.045)+'" y2="'+(fy-(fy-my)*0.045)+'" stroke="#8a6cf0" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" marker-end="url(#oa)"/>'+
+    '<circle cx="'+ox+'" cy="'+oy+'" r="7.5" fill="#17181c"/><text x="'+(ox-6)+'" y="'+(oy-14)+'" font-size="13" font-weight="700" fill="#17181c">原点 '+o.age+'歳</text>'+
+    '<circle cx="'+cx+'" cy="'+my+'" r="7.5" fill="#17181c"/><text x="'+(cx+12)+'" y="'+(my+(up?24:-14))+'" font-size="13" font-weight="700" fill="#17181c">いま '+now.age+'歳</text>'+
+    '<circle cx="'+fx+'" cy="'+fy+'" r="8" fill="rgba(138,108,240,.12)" stroke="#8a6cf0" stroke-width="2" stroke-dasharray="2 3"/>'+
+    '<text x="'+(fx+15)+'" y="'+(fy-1)+'" font-size="13" font-weight="700" fill="#17181c">未来の点 '+fAge+'歳</text><text x="'+(fx+15)+'" y="'+(fy+15)+'" font-size="12" fill="#85868c">いまから'+span+'年先</text>'+
     '</svg></div>'+
     '<div class="omat"><span class="lab">未来の点（'+fAge+'歳）の可能性</span>'+
-    (fs.length?'<ul class="flist">'+fs.map((t,i)=>'<li><span>'+esc(t)+'</span><button type="button" class="fx" data-fdel="'+i+'" aria-label="「'+esc(t)+'」を消す">×</button></li>').join('')+'</ul>':'<p class="hint">まだありません。原点の体験から考えられる未来を、下に書き足してください。</p>')+
-    '<div class="ver"><input type="text" id="futIn" placeholder="例：祖父の工房を継ぐ" aria-label="未来の可能性を書く"><button class="btn sm" type="button" data-fadd="1">足す</button></div>'+
-    (sampleFn?'<div class="acts"><button class="btn sm" type="button" id="futAi">AIに可能性を出してもらう</button><span class="hint">原点といまのカードの内容がClaudeに送られます。</span></div>':'')+
+    (fs.length?'<ul class="flist">'+fs.map((t,i)=>'<li><span>'+esc(t)+'</span><button type="button" class="fx" data-fdel="'+i+'" aria-label="「'+esc(t)+'」を消す">'+ic('x',14)+'</button></li>').join('')+'</ul>':'<p class="hint">まだありません。原点の体験から考えられる未来を、下に書き足してください。</p>')+
+    '<div class="ver"><input type="text" id="futIn" placeholder="例：祖父の工房を継ぐ" aria-label="未来の可能性を書く"><button class="btn dark" type="button" data-fadd="1">足す</button></div>'+
+    (sampleFn?'<div class="acts"><button class="btn line" type="button" id="futAi">'+ic('spark')+'AIに可能性を出してもらう</button><span class="hint">原点といまのカードの内容がClaudeに送られます。</span></div>':'')+
     (futSug.length?'<div class="chips">'+futSug.map((t,i)=>'<button type="button" class="pick ai" data-fsug="'+i+'">＋ '+esc(t)+'</button>').join('')+'</div>':'')+
     '<p class="hint" id="futMsg" role="status">'+esc(futMsg)+'</p>'+
-    '<span class="lab">材料（原点 '+o.age+'歳のカード）</span><dl><dt>体験</dt><dd>'+esc(o.exp||'（未記入）')+'</dd><dt>感情</dt><dd>'+(o.emoTags.length?o.emoTags.map(t=>'#'+esc(t)).join(' '):'（未記入）')+'</dd><dt>価値観</dt><dd>'+esc(o.value||'まだ言葉になっていない')+'</dd></dl>'+
+    '<span class="lab">材料（原点 '+o.age+'歳のカード）</span><dl><dt>体験</dt><dd>'+esc(o.exp||'（未記入）')+'</dd><dt>感情</dt><dd>'+(o.emoTags.length?esc(o.emoTags.join('・')):'（未記入）')+'</dd><dt>価値観</dt><dd>'+esc(o.value||'まだ言葉になっていない')+'</dd></dl>'+
     '<p class="hint">未来の点の年齢は、原点からいままでの'+span+'年を、いまから先へ同じだけ延ばしたものです（'+o.age+'歳 → '+now.age+'歳 → '+fAge+'歳）。人は、自分が体験したことしか再現できません。新しくなるのは手段で、もとになるのは原点の体験です。点の高さは感情の強さ（下ほど強い）です。ほかの点を押すと、原点を変えられます。</p></div>';
 }
 
@@ -727,7 +819,7 @@ function renderOrigin(){
 function renderBars(){
   const n=$('#notice');
   if(clearAsk)n.innerHTML='<span>すべてのカードと線、版を消して、空の地図にします。元には戻せません。</span><button class="btn sm danger" type="button" data-act="clear-yes">空にする</button><button class="btn sm" type="button" data-act="clear-no">やめる</button>';
-  else if(S.sample)n.innerHTML='<span><b>サンプル</b>を表示しています（いまの会社に悩む、架空の38歳の例）。入力した内容は、この端末のブラウザの中だけに保存されます。</span><button class="btn sm" type="button" data-act="clear">空にして自分の原体験を入れる</button>';
+  else if(S.sample)n.innerHTML='<span class="badge">サンプル</span><span>いまの会社に悩む、架空の38歳の例を表示しています。入力した内容は、この端末のブラウザの中だけに保存されます。</span><button class="btn sm" type="button" data-act="clear">空にして自分の原体験を入れる</button>';
   else n.innerHTML='<span>入力した内容は、この端末のブラウザの中だけに保存されます。別の端末で使うときは「書き出す・読み込む」を使ってください。</span>'+(S.cards.length?'<button class="btn sm" type="button" data-act="clear">すべて消す</button>':'');
   const m=$('#modeBar'); let h='';
   if(mode&&mode.type==='connect')h='<span>「'+esc(refLabel(mode.from))+'」からつなぐ先の行を押してください。</span><button class="btn sm" type="button" data-act="mode-off">やめる</button>';
@@ -740,15 +832,58 @@ function renderBars(){
   m.innerHTML=h; m.hidden=!h;
 }
 
+function sortedCards(){const k=['past','now','if','future'];return [...S.cards].sort((a,b)=>k.indexOf(a.kind)-k.indexOf(b.kind)||((a.age??0)-(b.age??0)));}
+function barRows(rows,color){
+  const max=Math.max(1,...rows.map(r=>r[1]));
+  return '<div class="bars">'+rows.map(r=>'<span class="bl" title="'+esc(r[0])+'：'+r[1]+'">'+esc(r[0])+'</span><span class="bt" title="'+esc(r[0])+'：'+r[1]+'"><i style="width:'+(r[1]/max*100).toFixed(1)+'%;background:'+color+'"></i></span><b>'+r[1]+'</b>').join('')+'</div>';
+}
+function renderView(){
+  const el=$('#viewOther'); let h='';
+  if(view==='list'){
+    const cs=sortedCards().filter(c=>matchQ(c)!==false);
+    h='<div class="sec-h"><h2>リスト</h2><span class="hint">'+cs.length+' 枚'+(q.trim()?'（「'+esc(q.trim())+'」に合うもの）':'')+'</span></div>';
+    h+=cs.length?'<div class="tablewrap"><table class="list"><thead><tr><th>区分</th><th>体験</th><th>感情</th><th>価値観</th><th>確定した線</th><th></th></tr></thead><tbody>'+cs.map(c=>{
+        const n=S.lines.filter(l=>l.state==='confirmed'&&(l.from.card===c.id||l.to.card===c.id)).length;
+        return '<tr data-id="'+c.id+'"><td class="kc"><span class="cdot k-'+c.kind+'"></span>'+esc(cardLabel(c))+'</td><td>'+(esc(c.exp)||'<span class="ph">（未記入）</span>')+'</td><td>'+(esc(c.emoTags.join('・'))||'<span class="ph">—</span>')+'</td><td>'+(esc(c.value)||'<span class="ph">—</span>')+'</td><td class="num">'+n+'</td><td><button class="btn sm" type="button" data-edit="'+c.id+'">編集</button></td></tr>';
+      }).join('')+'</tbody></table></div>'
+      :'<p class="empty">'+(S.cards.length?'合うカードがありません。':'まだカードがありません。左の「カードを追加」から入れてください。')+'</p>';
+  }else if(view==='stats'){
+    const past=S.cards.filter(c=>c.kind==='past'), n=st=>S.lines.filter(l=>l.state===st).length;
+    const vals=past.filter(c=>c.value.trim());
+    const tiles=[[S.cards.length,'カード'],[past.length,'過去の原体験'],[S.cards.filter(c=>c.kind==='now'||c.kind==='if').length,'いま・もしも'],[n('confirmed'),'確定した線'],[n('candidate'),'候補の線'],[vals.length+' / '+past.length,'言葉になった価値観']];
+    const em=new Map(); S.cards.forEach(c=>c.emoTags.forEach(t=>em.set(t,(em.get(t)||0)+1)));
+    const emRows=[...em.entries()].sort((a,b)=>b[1]-a[1]);
+    const valRows=vals.map(c=>[c.value,new Set(S.lines.filter(l=>l.state==='confirmed'&&l.from.card===c.id&&l.from.row==='val'&&card(l.to.card)&&card(l.to.card).kind!=='past').map(l=>l.to.card)).size]).sort((a,b)=>b[1]-a[1]);
+    h='<div class="sec-h"><h2>統計</h2></div><div class="tiles">'+tiles.map(t=>'<div class="tile"><b>'+t[0]+'</b><span>'+t[1]+'</span></div>').join('')+'</div>'+
+      '<div class="statbox"><h3>感情タグの回数</h3>'+(emRows.length?barRows(emRows,'var(--emo)')+'<p class="hint">すべてのカードに付いた感情タグを数えたものです。</p>':'<p class="empty">感情タグを付けると、ここに回数が出ます。</p>')+'</div>'+
+      '<div class="statbox"><h3>価値観が届いている先の数</h3>'+(valRows.length?barRows(valRows,'var(--val)')+'<p class="hint">それぞれの価値観から、「いま」「もしも」「未来」のカードへ確定した線が何枚ぶん届いているかです。</p>':'<p class="empty">過去のカードに価値観を書くと、ここに出ます。</p>')+'</div>';
+  }else{
+    h='<div class="sec-h"><h2>設定</h2></div>'+
+      '<div class="set"><h3>データ</h3><p class="hint">'+(S.sample?'いまはサンプル（架空の38歳の例）が入っています。':'カード '+S.cards.length+' 枚、線 '+S.lines.length+' 本、版 '+S.versions.length+' 個が入っています。')+'入力した内容は、この端末のブラウザの中だけに保存されます。</p>'+
+      (clearAsk?'<div class="acts"><span class="hint">すべてのカードと線、版を消します。元には戻せません。</span><button class="btn sm danger" type="button" data-act="clear-yes">空にする</button><button class="btn sm" type="button" data-act="clear-no">やめる</button></div>'
+        :'<div class="acts"><button class="btn sm line" type="button" data-act="clear">'+(S.sample?'空にして自分の原体験を入れる':'すべて消す')+'</button><button class="btn sm line" type="button" data-act="io">書き出す・読み込む</button></div>')+'</div>'+
+      '<div class="set"><h3>表示</h3><p class="hint">左右の欄の幅、地図の高さ、地図の倍率を最初の状態に戻します。</p><div class="acts"><button class="btn sm line" type="button" data-act="ui-reset">大きさと倍率を元に戻す</button></div></div>'+
+      '<div class="set"><h3>保存について</h3><p class="hint">別の端末やブラウザで使うときは、「書き出す・読み込む」でファイルにして移してください。ブラウザのサイトデータを消すと、ここに入れた内容も消えます。</p></div>';
+  }
+  el.innerHTML=h;
+}
+function applyView(){
+  document.querySelectorAll('.navb').forEach(b=>{if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  $('#viewMap').hidden=view!=='map'; $('#viewOther').hidden=view==='map';
+}
 function render(){
   syncTags();
   if(sel&&sel.type==='line'&&!line(sel.id))sel=null;
   if(sel&&sel.type==='row'&&!card(sel.card))sel=null;
   if(compareId&&!S.versions.some(v=>v.id===compareId))compareId=null;
-  renderCards();
-  if(S.needsLayout||!S.manual){autoLayout();S.needsLayout=false;}
-  S.cards.forEach(place);
-  sizeInner(); renderWires(); renderSide(); renderMenu(); renderOrigin(); renderBars(); persist();
+  applyView();
+  if(view==='map'){
+    renderCards();
+    if(S.needsLayout||!S.manual){autoLayout();S.needsLayout=false;}
+    S.cards.forEach(place);
+    sizeInner(); renderWires(); renderOrigin();
+  }else renderView();
+  renderSide(); renderMenu(); renderBars(); persist();
 }
 
 /* ---------- 操作：地図 ---------- */
@@ -839,7 +974,7 @@ function onPanelClick(e){
     case 'remove': if(l){l.state='removed';render();} break;
     case 're-from': case 're-to': if(l){mode={type:'reconnect',line:l.id,end:b.dataset.act==='re-from'?'from':'to'};render();} break;
     case 'add-if': openCard(null,'if'); break;
-    case 'sel-card': sel={type:'row',card:id,row:'exp'};render();scrollToCard(id); break;
+    case 'sel-card': view='map';sel={type:'row',card:id,row:'exp'};render();scrollToCard(id); break;
     case 'edit-card': openCard(id); break;
     case 'ver-save': saveVersion($('#verName').value);render(); break;
     case 'ver-cmp': compareId=compareId===id?null:id;sel=null;render(); break;
@@ -851,10 +986,12 @@ side.addEventListener('click',onPanelClick);
 $('#menu').addEventListener('click',onPanelClick);
 side.addEventListener('input',e=>{if(e.target.id==='lineNote'){const l=selLine();if(l){l.note=e.target.value;persist();}}});
 document.querySelector('.app').addEventListener('click',e=>{
-  const b=e.target.closest('.notice button,.modebar button'); if(!b)return;
+  const b=e.target.closest('.notice button,.modebar button,#viewOther button[data-act]'); if(!b)return;
   switch(b.dataset.act){
-    case 'clear': clearAsk=true;renderBars(); break;
-    case 'clear-no': clearAsk=false;renderBars(); break;
+    case 'clear': clearAsk=true;render(); break;
+    case 'clear-no': clearAsk=false;render(); break;
+    case 'io': $('#ioBtn').click(); break;
+    case 'ui-reset': UI=Object.assign({},DEF);Z=1;applyUI();saveUI();render(); break;
     case 'clear-yes': clearAsk=false;S=emptyState();sel=null;mode=null;compareId=null;render(); break;
     case 'mode-off': mode=null;render(); break;
     case 'cmp-off': compareId=null;render(); break;
@@ -884,7 +1021,15 @@ async function aiFutures(btn){
 }
 $('#originBody').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('.odot')){e.preventDefault();e.target.closest('.odot').dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
 $('#addBtn').addEventListener('click',()=>openCard(null,'past'));
-document.querySelector('.legend').addEventListener('click',e=>{
+$('#addFab').addEventListener('click',()=>openCard(null,'past'));
+document.querySelector('.nav').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;view=b.dataset.view;render();});
+$('#q').addEventListener('input',e=>{q=e.target.value;render();});
+$('#viewOther').addEventListener('click',e=>{
+  if(e.target.closest('button[data-act]'))return;
+  const ed=e.target.closest('[data-edit]'), tr=e.target.closest('tr[data-id]');
+  if(ed)openCard(ed.dataset.edit); else if(tr)openCard(tr.dataset.id);
+});
+document.querySelector('.maphint').addEventListener('click',e=>{
   const b=e.target.closest('[data-jump]'); if(!b)return;
   if(b.dataset.jump==='past'){mapEl.scrollTo({left:0,top:0,behavior:'smooth'});return;}
   const c=S.cards.find(c=>c.kind==='now')||S.cards.find(c=>c.kind==='if'), el=c&&cardEl(c.id);
@@ -1016,7 +1161,7 @@ $('#ioLoad').addEventListener('click',()=>{
 
 /* ---------- 領域の大きさ（境目を引っぱって変える） ---------- */
 const UIKEY='gentaiken-ui-v1', appEl=document.querySelector('.app');
-const LIM={lw:[160,440],rw:[240,600],mh:[220,1600]}, DEF={lw:224,rw:344,mh:0,z:1};
+const LIM={lw:[160,440],rw:[240,600],mh:[220,1600]}, DEF={lw:236,rw:344,mh:0,z:1};
 let UI=Object.assign({},DEF);
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'{}');for(const k in DEF)if(typeof u[k]==='number')UI[k]=u[k];}catch(e){}
 function applyUI(){
@@ -1055,6 +1200,8 @@ mapEl.addEventListener('wheel',e=>{
 splitter($('#splitL'),'lw',1,'x'); splitter($('#splitR'),'rw',-1,'x'); splitter($('#splitM'),'mh',1,'y');
 
 /* ---------- 起動 ---------- */
+document.querySelectorAll('[data-ic]').forEach(el=>el.insertAdjacentHTML('afterbegin',ic(el.dataset.ic,el.classList.contains('sm')?14:el.classList.contains('fab')?22:18)));
+if(['#list','#stats','#settings'].includes(location.hash))view=location.hash.slice(1);
 render();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
 window.addEventListener('resize',()=>{sizeInner();renderWires();});
